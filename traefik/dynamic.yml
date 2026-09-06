@@ -1,0 +1,15 @@
+http:
+  routers:
+    frontend-secure:
+      rule: "Host(`valutafacile.it`) || Host(`www.valutafacile.it`)"
+      entryPoints:
+        - websecure
+      service: frontend
+      tls:
+        certResolver: le
+
+  services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:80"
