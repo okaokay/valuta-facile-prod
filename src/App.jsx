@@ -1210,6 +1210,7 @@ function App() {
     setOgMeta('og:description', description)
     setOgMeta('og:url', `https://valutafacile.it${canonicalPath}`)
     setOgMeta('og:type', canonicalPath.startsWith('/blog/') ? 'article' : 'website')
+    setOgMeta('og:image', 'https://valutafacile.it/og-image.png')
   }, [currentPage, currentBlogArticle, currentProvinceSlug])
 
   // JSON-LD (schema.org): Organization + WebSite sempre presenti; BreadcrumbList
