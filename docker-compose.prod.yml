@@ -1,0 +1,107 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${LISTMONK_db__user:-listmonk}
+      POSTGRES_PASSWORD: ${LISTMONK_db__password:-listmonk}
+      POSTGRES_DB: ${LISTMONK_db__database:-listmonk}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LISTMONK_db__user:-listmonk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # Avvio normale: docker compose -f docker-compose.prod.yml --profile run up -d
+  listmonk:
+    image: listmonk/listmonk:latest
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["run"]
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # Setup iniziale (una tantum): docker compose -f docker-compose.prod.yml --profile setup up listmonk-setup
+  listmonk-setup:
+    image: listmonk/listmonk:latest
+    env_file:
+      - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["setup"]
+    command: ["./listmonk", "--install", "--yes"]
+    restart: "no"
+    networks:
+      - app-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    env_file:
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      OMI_KML_PATH: /app/omi
+      OMI_DB_PATH: /app/omi-data/omi_official.sqlite
+    volumes:
+      - db-data:/app/data
+      - uploads-data:/app/uploads
+      - ./omi:/app/omi:ro
+      - ./data:/app/omi-data:ro
+      - ./scripts:/app/scripts:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_USE_MOCKS: "false"
+        VITE_GROQ_API_KEY: ${VITE_GROQ_API_KEY}
+    ports:
+      - "80:80"
+      - "443:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app-net
+
+volumes:
+  db-data:
+  postgres-data:
+  uploads-data:
+networks:
+  app-net:
+    driver: bridge

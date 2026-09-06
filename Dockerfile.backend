@@ -1,0 +1,12 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev --legacy-peer-deps
+COPY server ./server
+COPY src ./src
+COPY omi ./omi
+RUN mkdir -p uploads/reports data
+ENV NODE_ENV=production
+ENV PORT=4000
+EXPOSE 4000
+CMD ["npx", "tsx", "server/index.js"]

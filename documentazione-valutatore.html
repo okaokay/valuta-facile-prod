@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Documentazione Valutatore Immobiliare</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Mermaid per i diagrammi -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-alt: #020617;
+      --fg: #e5e7eb;
+      --fg-muted: #9ca3af;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.12);
+      --border: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%);
+      color: var(--fg);
+      line-height: 1.5;
+    }
+
+    a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+
+    .hero {
+      margin-bottom: 32px;
+      padding: 24px 24px 20px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(8,47,73,0.7));
+      border: 1px solid rgba(148,163,184,0.3);
+      box-shadow:
+        0 18px 45px rgba(15,23,42,0.8),
+        0 0 0 1px rgba(15,23,42,0.9) inset;
+    }
+
+    .hero-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin: 0 0 8px;
+    }
+
+    .hero-subtitle {
+      margin: 0;
+      color: var(--fg-muted);
+      font-size: 14px;
+    }
+
+    .hero-tags {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: rgba(15,23,42,0.8);
+      color: var(--fg-muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 960px) {
+      .grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: rgba(15,23,42,0.94);
+      border-radius: 16px;
+      border: 1px solid rgba(31,41,55,0.9);
+      padding: 16px 18px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.6);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-title span.icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(79,70,229,0.12);
+      border: 1px solid rgba(79,70,229,0.5);
+      font-size: 11px;
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 18px 0 8px;
+    }
+
+    h3 {
+      font-size: 15px;
+      margin: 16px 0 6px;
+    }
+
+    p {
+      margin: 4px 0 8px;
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    ul {
+      margin: 4px 0 8px 18px;
+      padding: 0;
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    li {
+      margin: 2px 0 2px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: rgba(15,23,42,0.85);
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid rgba(31,41,55,0.9);
+    }
+
+    pre {
+      margin: 8px 0 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(31,41,55,0.95);
+      overflow-x: auto;
+      font-size: 12px;
+    }
+
+    pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      font-size: 11px;
+      border: 1px solid rgba(31,41,55,0.9);
+      color: var(--fg-muted);
+    }
+
+    .section {
+      margin-top: 24px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(31,41,55,0.95);
+      background: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+      box-shadow: 0 14px 35px rgba(0,0,0,0.8);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .section-caption {
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+
+    .mermaid-container {
+      margin: 10px 0 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.18), rgba(15,23,42,0.92));
+      border: 1px solid rgba(55,65,81,0.9);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(22,101,52,0.15);
+      border: 1px solid rgba(22,163,74,0.7);
+      color: #bbf7d0;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .badge span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.25);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 960px) {
+      .two-col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+      font-size: 11px;
+      font-family: inherit;
+    }
+  </style>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "dark"
+    });
+  </script>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1 class="hero-title">Documentazione Valutatore Immobiliare – Architettura & Flussi</h1>
+      <p class="hero-subtitle">
+        Panoramica completa di frontend, backend, motore OMI ufficiale + fallback sintetico, dashboard admin
+        e runbook operativo. I diagrammi sono ricostruiti a partire dal codice reale.
+      </p>
+      <div class="hero-tags">
+        <span class="tag">React + Vite</span>
+        <span class="tag">Express + SQLite</span>
+        <span class="tag">OMI ufficiale + sintetico</span>
+        <span class="tag">Docker multi-container</span>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="icon">⚙</span>
+              Architettura generale
+            </div>
+            <div class="card-subtitle">
+              Frontend React, backend Express, DB utenti e DB OMI ufficiale
+            </div>
+          </div>
+          <span class="pill">Vista sintetica</span>
+        </div>
+
+        <h3>Frontend</h3>
+        <ul>
+          <li>SPA React 18 con Vite (entry in <code>src/main.jsx</code>, core in <code>src/App.jsx</code>).</li>
+          <li>Stili globali in <code>src/index.css</code> (Tailwind + classi custom, mappe, accessibilità).</li>
+          <li>Wizard valutazione passo-passo + landing di provincia + blog.</li>
+          <li>Dashboard admin integrata nella stessa SPA (tab overview, contatti, analytics, GDPR).</li>
+        </ul>
+
+        <h3>Backend</h3>
+        <ul>
+          <li>Express 4, API definite in <code>server/index.js</code>.</li>
+          <li>SQLite tramite <code>better-sqlite3</code> per:
+            <ul>
+              <li>leads (<code>users_leads</code>, <code>lead_media</code>, <code>lead_ai_analysis</code>)</li>
+              <li>analytics landing di provincia (<code>province_analytics_events</code>)</li>
+            </ul>
+          </li>
+          <li>DB OMI ufficiale dedicato in <code>data/omi_official.sqlite</code> gestito da
+            <code>OmiOfficialRepository</code>.</li>
+        </ul>
+
+        <h3>Deploy</h3>
+        <ul>
+          <li>Docker multi-container (backend Node + frontend statico Nginx).</li>
+          <li>Reverse proxy frontend &rarr; backend via path <code>/api</code>.</li>
+          <li>Volumi per persistenza DB e file upload.</li>
+        </ul>
+      </article>
+
+      <aside class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="icon">📂</span>
+              File chiave
+            </div>
+            <div class="card-subtitle">Punti di ingresso e servizi principali</div>
+          </div>
+        </div>
+        <ul>
+          <li><code>package.json</code>: dipendenze e script (dev, build, lint, server, import OMI).</li>
+          <li><code>server/index.js</code>: API admin, leads, analytics, valutazione.</li>
+          <li><code>server/db.js</code>: schema e query SQLite per leads + analytics.</li>
+          <li><code>server/services/OmiOfficialRepository.js</code>:
+            accesso al DB OMI ufficiale.</li>
+          <li><code>src/App.jsx</code>: logica principale wizard, routing, admin dashboard.</li>
+          <li><code>src/services/realOmiService.js</code>:
+            database CAP sintetico + inferenza regionale.</li>
+          <li><code>src/services/omiService.js</code>:
+            wrapper OMI “migliorato” con fallback garantito.</li>
+          <li><code>src/services/enhancedAddressService.js</code>:
+            autocomplete indirizzi + geocoding.</li>
+          <li><code>src/services/leadsService.js</code> e
+            <code>src/services/adminLeadsService.js</code>:
+            invio lead + API admin.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <!-- Flussi principali con diagrammi Mermaid -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Flusso valutazione immobile</div>
+          <div class="section-caption">
+            Dalla ricerca indirizzo alla stima con OMI ufficiale + fallback sintetico e media upload.
+          </div>
+        </div>
+        <span class="badge"><span class="dot"></span> Diagramma ricostruito dal codice</span>
+      </div>
+
+      <p class="small">
+        Questo diagramma rappresenta il flusso dedotto dal codice di <code>App.jsx</code>,
+        <code>server/index.js</code>, <code>realOmiService.js</code> e servizi associati.
+      </p>
+
+      <div class="mermaid-container">
+        <div class="mermaid">
+sequenceDiagram
+    participant U as Utente
+    participant FE as Frontend (App.jsx)
+    participant OMI as Servizio OMI sintetico
+    participant BE as Backend Express
+    participant DBOMI as DB OMI ufficiale
+
+    U->>FE: Inserisce indirizzo (home)
+    FE->>FE: handleTestHomeSearch() / searchAddresses()
+    U->>FE: Seleziona indirizzo
+    FE->>FE: handleAddressSelect(address)
+    FE->>OMI: getOmiValues(cap)
+    OMI-->>FE: dati OMI sintetici (avg/min/max)
+    FE->>FE: salva omiData, passa a step proprietà
+
+    U->>FE: Compila proprietà e invia
+    FE->>BE: POST /api/valuation/enhanced-omi
+    BE->>DBOMI: query OMI ufficiale per CAP/comune/tipologia
+    DBOMI-->>BE: range MIN/MAX €/mq o nessun dato
+
+    alt Dati OMI ufficiali disponibili
+        BE-->>FE: valutazione con reliability=UFFICIALE_COMUNALE
+    else Niente dati ufficiali
+        BE->>OMI: getRealOmiValues(cap)
+        OMI-->>BE: dati OMI sintetici
+        BE-->>FE: valutazione con source=real-omi-cap-fallback
+    end
+
+    opt Upload media
+        FE->>BE: POST /api/valuation/media
+        BE-->>FE: mediaId
+        FE->>BE: POST /api/valuation/ai-analyze
+        BE-->>FE: conditionScore + tags
+        FE->>FE: applyMediaDeltaToValuation()
+    end
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <h3>Passi di dettaglio</h3>
+          <ul>
+            <li><strong>Ricerca indirizzo</strong>:
+              <code>searchAddresses()</code> usa database locale + Nominatim + Photon con deduplica intelligente.</li>
+            <li><strong>Enrich CAP</strong>:
+              <code>enrichAddressWithCAP()</code> fa reverse geocoding e applica override CAP per comuni critici.</li>
+            <li><strong>Pre-OMI sintetico</strong>:
+              <code>getOmiValues(cap)</code> garantisce sempre un set di valori (anche stimati) per evitare errori.</li>
+            <li><strong>Valutazione principale</strong>:
+              <code>calculateEnhancedValuation()</code> chiama il backend; il backend usa prima OMI ufficiale e poi OMI sintetico.</li>
+            <li><strong>Media upload</strong>:
+              i file sono caricati in un archivio in memoria lato server per essere analizzati in modo semplice
+              (nessuna AI esterna, solo regole sul numero di foto/planimetria).</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Note operative</h3>
+          <ul>
+            <li>Se il DB OMI ufficiale non è disponibile, il sistema passa in modalità sintetica senza bloccare l’utente.</li>
+            <li>La provenienza dei dati è indicata da <code>source</code> e <code>metadati.reliability</code> nella risposta.</li>
+            <li>La logica media/“AI analyze” non modifica la fonte dei dati, ma solo un delta sul prezzo finale.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Flusso lead & dashboard admin</div>
+          <div class="section-caption">
+            Dal popup di contatto all’archiviazione su SQLite e alla consultazione nell’area staff.
+          </div>
+        </div>
+        <span class="badge"><span class="dot"></span> Diagramma ricostruito dal codice</span>
+      </div>
+
+      <div class="mermaid-container">
+        <div class="mermaid">
+sequenceDiagram
+    participant U as Utente
+    participant FE as Frontend
+    participant BE as Backend
+    participant DB as dev.sqlite
+
+    U->>FE: Compila form contatto (popup)
+    FE->>BE: POST /api/leads
+    BE->>DB: insertLead(), insertMediaRecords(), insertAiAnalysis()
+    DB-->>BE: leadId
+    BE-->>FE: { success, leadId }
+
+    U->>FE: Accede a dashboard admin (?admin=...)
+    FE->>BE: POST /api/admin/login-step1
+    BE-->>FE: pendingToken o token JWT
+    FE->>BE: POST /api/admin/login-step2 (se TOTP attivo)
+    BE-->>FE: token JWT definitivo
+
+    FE->>BE: GET /api/admin/leads
+    BE->>DB: getAdminLeads()
+    DB-->>BE: items + stats
+    BE-->>FE: JSON leads e statistiche
+
+    FE->>BE: GET /api/admin/analytics/province/summary/timeseries
+    BE->>DB: getProvinceAnalyticsSummary()/Timeseries()
+    DB-->>BE: aggregati per provincia
+    BE-->>FE: dati per grafici dashboard
+        </div>
+      </div>
+
+      <p class="small">
+        Login admin protetto da password (hash o chiaro) e, opzionalmente, TOTP.
+        Le chiamate admin usano sempre token JWT e vengono limitate da rate limiter.
+      </p>
+    </section>
+
+    <!-- Sezione: commento file per file (sintesi + punti critici) -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Sintesi file principali & punti critici</div>
+          <div class="section-caption">Per ogni area: cosa fa e dove prestare attenzione.</div>
+        </div>
+      </div>
+
+      <h2>Backend – server/index.js</h2>
+      <ul>
+        <li><strong>Setup</strong>:
+          inizializza Express, CORS condizionale per path <code>/api</code>, JWT admin e rate limiter.</li>
+        <li><strong>Login admin</strong>:
+          <code>/api/admin/login-step1</code> e <code>/login-step2</code> gestiscono password e TOTP.</li>
+        <li><strong>Leads</strong>:
+          <code>/api/leads</code> gestisce upload (planimetria + foto) e inserimento nel DB.</li>
+        <li><strong>Analytics</strong>:
+          <code>/api/analytics/province/pageview</code> salva eventi e gli endpoint admin li aggregano.</li>
+        <li><strong>Valutazione</strong>:
+          <code>/api/valuation/enhanced-omi</code> è l’endpoint principale che usa OMI ufficiale
+          con fallback sintetico.</li>
+        <li><strong>Media “AI analyze”</strong>:
+          <code>/api/valuation/ai-analyze</code> calcola un punteggio semplice basato su file caricati.</li>
+      </ul>
+
+      <h3>Punti critici server/index.js</h3>
+      <ul>
+        <li><strong>CORS</strong>:
+          è consentito solo per origin in <code>ADMIN_ALLOWED_ORIGINS</code> e per qualsiasi <code>localhost</code>.
+          Se non configurato correttamente, il login admin fallisce lato browser.</li>
+        <li><strong>OMI ufficiale</strong>:
+          se il DB ufficiale non è disponibile o <code>OMI_DB_PATH</code> è errato,
+          il repository non si inizializza e si passa sempre a fallback sintetico.</li>
+        <li><strong>Modalità strict</strong>:
+          con <code>OFFICIAL_MODE_STRICT=1</code>, se non c’è dato ufficiale o la tipologia non è mappata
+          viene restituito errore 4xx/5xx e non viene usato fallback sintetico.</li>
+        <li><strong>Login admin</strong>:
+          l’uso di <code>ADMIN_PASS</code> in chiaro è comodo in sviluppo ma non raccomandato in produzione.</li>
+      </ul>
+
+      <h2>Backend – server/db.js</h2>
+      <ul>
+        <li><strong>Schema</strong>:
+          definisce tabelle per leads, media, analisi AI e eventi analytics province.</li>
+        <li><strong>Funzioni principali</strong>:
+          <code>insertLead</code>, <code>insertMediaRecords</code>,
+          <code>insertAiAnalysis</code>, <code>getAdminLeads</code>,
+          <code>getProvinceAnalyticsSummary</code>, <code>getProvinceAnalyticsTimeseries</code>.</li>
+      </ul>
+      <h3>Punti critici db.js</h3>
+      <ul>
+        <li>Nessun indice esplicito: con molti dati, query per lead e analytics potrebbero rallentare.</li>
+        <li>Dati personali in chiaro: nessuna cifratura a riposo (dipende dai requisiti di compliance del titolare).</li>
+      </ul>
+
+      <h2>Backend – OmiOfficialRepository.js &amp; mapping tipologie</h2>
+      <ul>
+        <li><code>OmiOfficialRepository</code> apre <code>omi_official.sqlite</code> in sola lettura,
+          prepara statement per:
+          <ul>
+            <li>trovare i comuni a partire dal CAP;</li>
+            <li>estrarre l’ultimo semestre attivo;</li>
+            <li>calcolare il range MIN/MAX €/mq per comune e tipologia.</li>
+          </ul>
+        </li>
+        <li><code>mapUiCategoryToOmi</code> traduce le categorie dell’interfaccia nelle descrizioni OMI.</li>
+      </ul>
+      <h3>Punti critici</h3>
+      <ul>
+        <li>Se non si aggiorna la mappa delle tipologie, nuove categorie UI non saranno coperte in modalità strict.</li>
+      </ul>
+
+      <h2>Frontend – App.jsx</h2>
+      <ul>
+        <li>Gestisce:
+          <ul>
+            <li>wizard di valutazione (indirizzo → proprietà → risultato);</li>
+            <li>popup contatto e invio lead;</li>
+            <li>routing interno (privacy, pre, landing di provincia, blog, blog-detail);</li>
+            <li>admin login e dashboard staff;</li>
+            <li>tracking analytics landing di provincia.</li>
+          </ul>
+        </li>
+        <li>Definisce funzioni chiave:
+          <code>handleAddressSelect</code>, <code>calculateEnhancedValuation</code>,
+          <code>calculateTraditionalValuation</code>, <code>applyMediaDeltaToValuation</code>,
+          <code>goBack</code>, <code>restart</code>.</li>
+      </ul>
+      <h3>Punti critici App.jsx</h3>
+      <ul>
+        <li>“God component”: molto stato e molta logica in un solo file; refactoring consigliato per
+          scalabilità e testabilità.</li>
+        <li>Coesistenza di due sistemi di valutazione (enhanced-omi backend vs calcoli locali),
+          anche se oggi viene usato principalmente il primo.</li>
+      </ul>
+
+      <h3>Struttura dettagliata di App.jsx</h3>
+      <p>
+        Per capire a fondo <code>src/App.jsx</code> è utile considerare, per ciascun blocco, il ruolo generale,
+        le sezioni principali, le variabili di stato importanti, cosa fa ogni funzione rilevante e come si collega
+        agli altri file.
+      </p>
+      <h4>Ruolo</h4>
+      <ul>
+        <li>Controlla gran parte dell’app:
+          <ul>
+            <li>flusso del wizard di valutazione;</li>
+            <li>landing (home, pre, landing di provincia, blog, pagine legali);</li>
+            <li>gestione stato globale (indirizzo, immobile, valutazione, lead, modali);</li>
+            <li>dashboard staff (area admin).</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h4>Sezioni principali (in ordine logico)</h4>
+      <ul>
+        <li><strong>Import</strong>:
+          importa React e gli hook (<code>useState</code>, <code>useEffect</code>, <code>useRef</code>, ecc.),
+          componenti UI (form, mappa, blog, wizard lead, footer), servizi (OMI, leads, <code>adminLeadsService</code>,
+          servizi AI) e librerie di animazione come <code>gsap</code>.
+        </li>
+        <li><strong>Stato globale</strong> (serie di chiamate a <code>useState</code>):
+          <ul>
+            <li><code>currentPage</code>: stringa che rappresenta dove si trova l’utente nell’app
+              (es. <code>'home'</code>, <code>'pre'</code>, <code>'address'</code>, <code>'property'</code>,
+              <code>'valuation'</code>, <code>'blog'</code>, <code>'blog-article'</code>,
+              <code>'province-landing'</code>, <code>'privacy'</code>, <code>'terms'</code>, <code>'cookies'</code>,
+              <code>'contact'</code>, <code>'support'</code>, ecc.).</li>
+            <li><code>wizardStep</code>: step interno del wizard di valutazione
+              (es. <code>'landing_address'</code>, <code>'main_features'</code>, <code>'exposure_question'</code>).</li>
+            <li><code>draftAddress</code> e <code>selectedAddress</code>:
+              la prima contiene l’input in fase di compilazione, la seconda l’indirizzo definitivo usato per OMI
+              e per l’invio al backend.</li>
+            <li><code>omiData</code>: risultati OMI (valori min/max/avg €/mq, affidabilità, tipo fonte).</li>
+            <li><code>propertyDraft</code>: dati dell’immobile (superficie, piano, stato, spazi esterni, ecc.).</li>
+            <li><code>wizardData</code>: oggetto che raggruppa ulteriori risposte del wizard
+              (per esempio <code>wizardData.extra</code> e <code>wizardData.lead</code>:
+              profilo utente, rapporto con l’immobile, tempistiche di vendita, consensi).</li>
+            <li><code>valuationResult</code>: risultato della valutazione (prezzo minimo/medio/massimo, €/mq).</li>
+            <li><code>contactData</code>: dati del contatto (nome, email, telefono, note) se l’utente compila il form.</li>
+            <li><code>isValuationUnlocked</code> e <code>valuationId</code>:
+              indicano se la valutazione è stata “sbloccata” e l’ID salvato lato backend.</li>
+            <li><code>loading</code> ed <code>error</code>: gestiscono stati di caricamento e messaggi di errore globali.</li>
+            <li><code>isLeadModalOpen</code> e <code>showContactPopup</code>: controllano la visibilità di modali e popup.</li>
+            <li><code>isAdminDashboard</code>, <code>adminTab</code>, <code>selectedLead</code> ecc.:
+              governano la vista dashboard staff.</li>
+          </ul>
+        </li>
+        <li><strong>Effetti su titolo e meta</strong>:
+          un <code>useEffect</code> osserva <code>currentPage</code>, <code>selectedAddress</code>,
+          <code>currentProvinceSlug</code> e altri flag per aggiornare <code>document.title</code> e la meta
+          description in base alla pagina corrente (home, valutazione, landing di provincia, privacy, termini, cookie,
+          contatti, centro assistenza, blog e singolo articolo).</li>
+        <li><strong>Parsing dell’URL iniziale</strong>:
+          un altro <code>useEffect</code> usa <code>new URL(window.location.href)</code> per leggere
+          <code>pathname</code> e parametri (es. <code>admin</code>, slug blog, slug provincia), calcola flag come
+          <code>pathIsRoot</code>, <code>pathIsPrivacy</code>, <code>pathIsTerms</code>, <code>pathIsCookies</code>,
+          <code>pathIsPre</code>, <code>pathIsHome</code>, <code>pathIsValutazione</code>, <code>pathIsContact</code>,
+          <code>pathIsSupport</code> e in base a questi imposta <code>currentPage</code> e lo
+          <code>wizardStep</code> iniziale (di solito <code>'landing_address'</code>). Se è presente
+          <code>?admin=ValutatoreStaff2025!</code> abilita la modalità dashboard staff.</li>
+        <li><strong>Funzioni di navigazione “pagine”</strong>:
+          funzioni come <code>goToHomePage</code>, <code>goToValuationPage</code>, <code>goToPrivacyPage</code>,
+          <code>goToTermsPage</code>, <code>goToCookiesPage</code>, <code>goToContactPage</code>,
+          <code>goToHelpCenterPage</code>, <code>goToFaqPage</code> aggiornano <code>currentPage</code>,
+          azzerano alcuni stati (per esempio <code>currentBlogSlug</code>, <code>wizardStep</code>),
+          aggiornano l’URL con <code>window.history.pushState</code>/<code>replaceState</code> e fanno
+          <code>window.scrollTo(0, 0)</code>.</li>
+        <li><strong>Funzioni specifiche del wizard</strong>:
+          <ul>
+            <li><em>Ricerca indirizzo</em> – <code>handleAddressSelect(enrichedAddress)</code> riceve l’indirizzo scelto
+              da <code>StepByStepAddressForm</code>, chiama il servizio OMI per avere i valori €/mq
+              (via <code>omiService</code> o <code>realOmiService</code>), salva <code>selectedAddress</code> e
+              <code>omiData</code> e porta l’utente allo step proprietà (<code>'property'</code>), aggiornando
+              <code>wizardStep</code>.</li>
+            <li><em>Form proprietà</em> – <code>handlePropertySubmit(property)</code> riceve i dati compilati in
+              <code>PropertyForm</code>, invia una richiesta <code>POST /api/valuation/enhanced-omi</code> al backend,
+              salva <code>valuationResult</code>, <code>valuationId</code> e metadati, quindi porta l’utente alla pagina
+              di risultato (<code>'valuation'</code>).</li>
+            <li><em>Media e AI</em> – funzioni dedicate inviano planimetrie/foto a
+              <code>/api/valuation/media</code>, richiedono analisi a <code>/api/valuation/ai-analyze</code> e
+              applicano il delta sulla valutazione tramite <code>applyMediaDeltaToValuation</code>.</li>
+            <li><em>Lead</em> – funzioni chiamate da <code>LeadQualificationWizard</code>,
+              <code>ContactForm</code> e <code>ContactFormPopup</code> costruiscono il payload con
+              <code>propertyDraft</code>, <code>wizardData.lead</code>, <code>valuationResult</code> e consensi
+              (marketing, agenzie), inviandolo al backend tramite <code>leadsService</code>.</li>
+            <li><em>Navigazione interna</em> – <code>goBack()</code> gestisce il ritorno agli step precedenti
+              (es. da proprietà a indirizzo, da valutazione a proprietà) e <code>restart()</code> esegue un reset
+              globale del wizard, riportando l’utente alla landing di indirizzo e azzerando stato immobile/valutazione.</li>
+          </ul>
+        </li>
+        <li><strong>Rendering principale</strong>:
+          il <code>return</code> definisce la struttura con un contenitore principale
+          <code>&lt;div className="min-h-screen ..."&gt;</code>, una top bar con le CTA, un blocco centrale che
+          renderizza viste diverse in base a <code>currentPage</code> (pre/home, wizard, blog, landing di provincia,
+          pagine legali, dashboard staff) e il footer <code>&lt;MainFooter /&gt;</code>. Quando
+          <code>currentPage</code> è <code>'address'</code>, <code>'property'</code> o <code>'valuation'</code>,
+          viene renderizzato <code>&lt;ValuationWizardPage /&gt;</code> che riceve gran parte dello stato e delle
+          funzioni come props.</li>
+      </ul>
+
+      <h2>Dashboard staff – panoramica funzionale</h2>
+      <p>
+        La dashboard staff (accessibile solo in ambiente di sviluppo tramite parametro
+        <code>?admin=ValutatoreStaff2025!</code> e credenziali configurate via variabili d’ambiente)
+        è l’area riservata per analizzare i lead raccolti, i gruppi automatici di contatti e le
+        performance delle landing di provincia.
+      </p>
+      <ul>
+        <li><strong>Accesso</strong>:
+          <ul>
+            <li>lato frontend, l’URL include il parametro <code>?admin=...</code> per mostrare la UI staff;</li>
+            <li>lato backend, gli endpoint <code>/api/admin/*</code> richiedono autenticazione JWT
+              ottenuta tramite il flusso di login admin.</li>
+          </ul>
+        </li>
+        <li><strong>Struttura</strong>: la dashboard è organizzata in tab, gestite da <code>adminTab</code> in
+          <code>App.jsx</code>:
+          <ul>
+            <li><em>Overview</em> – <code>&lt;ContactsDashboard /&gt;</code> in modalità predefinita:
+              panoramica contatti, grafici e riepilogo gruppi automatici;</li>
+            <li><em>Contatti</em> – gestione di dettaglio dei lead con filtri avanzati;</li>
+            <li><em>Statistiche landing province</em> – analytics sugli accessi alle landing per provincia;</li>
+            <li><em>Mappa comuni italiani</em> – esplorazione dei lead per regione/provincia/comune e CAP, con export CSV;</li>
+            <li><em>Raggruppamento automatico</em> – vista sui gruppi da 5 contatti per CAP, pronta per follow-up commerciale;</li>
+            <li><em>Registro trattamenti</em> – sintesi interna del registro GDPR.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>Tab “Overview” – Dashboard contatti</h3>
+      <ul>
+        <li>Mostra tre KPI principali:
+          <ul>
+            <li><strong>Contatti totali</strong>: numero complessivo di lead presenti in <code>users_leads</code>;</li>
+            <li><strong>Ultimi 7 giorni</strong>: lead ricevuti negli ultimi 7 giorni rispetto ad oggi;</li>
+            <li><strong>Ultimo contatto</strong>: data/ora dell’ultimo lead.</li>
+          </ul>
+        </li>
+        <li><strong>Grafico “Andamento contatti”</strong>:
+          <ul>
+            <li>bar chart con i contatti per giorno negli ultimi 7 giorni;</li>
+            <li>usa <code>barData</code> calcolato da <code>ContactsDashboard.jsx</code> e renderizzato via
+              <code>react-chartjs-2</code>/<code>Chart.js</code>;</li>
+            <li>tooltip personalizzato che mostra “Contatti: N”.</li>
+          </ul>
+        </li>
+        <li><strong>Box “Top CAP per numero di contatti”</strong>:
+          evidenzia i CAP con più lead, con numero di contatti per ciascun CAP.</li>
+        <li><strong>Box “Raggruppamento automatico”</strong>:
+          <ul>
+            <li>mostra quanti gruppi automatici da 5 contatti esistono, quanti contatti sono già
+              “raggruppati” e la percentuale di copertura;</li>
+            <li>elenca i CAP con più gruppi automatici e il numero di contatti in attesa del prossimo gruppo;</li>
+            <li>include la call to action “Vai al dettaglio gruppi” che porta alla tab “Raggruppamento automatico”.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>Tab “Contatti” – elenco lead e scheda completa</h3>
+      <p>
+        La tab Contatti usa ancora <code>ContactsDashboard.jsx</code> (prop <code>mode="contactsOnly"</code>) e
+        offre una vista completa sui lead.
+      </p>
+      <ul>
+        <li><strong>Filtri</strong>:
+          <ul>
+            <li>ricerca testuale su nome, email, telefono, città, CAP;</li>
+            <li>filter dedicati per CAP e città;</li>
+            <li>filtro media: tutti, solo con media, solo con planimetria, solo con foto, solo con analisi AI.</li>
+          </ul>
+        </li>
+        <li><strong>Tabella lead</strong>:
+          <ul>
+            <li>colonne: nome, contatti, indirizzo, CAP/città, dati immobile, valutazione, data, media/AI;</li>
+            <li>la colonna Valutazione mostra prezzo medio e €/mq quando <code>valuation.valutazione</code> è presente
+              o il <code>totalValue</code> nei casi legacy;</li>
+            <li>badge per planimetria, numero di foto e presenza analisi AI.</li>
+          </ul>
+        </li>
+        <li><strong>Mini-scheda laterale</strong>:
+          quando si clicca una riga, appare a destra una scheda con:
+          <ul>
+            <li>dati contatto (email/telefono);</li>
+            <li>indirizzo immobile e anagrafica immobile (superficie, piano, stato, camere/bagni, spazi esterni);</li>
+            <li>riepilogo valutazione (range, prezzo medio, €/mq);</li>
+            <li>stato media/AI.</li>
+          </ul>
+        </li>
+        <li><strong>Scheda completa contatto</strong>:
+          <ul>
+            <li>tramite “Apri scheda completa” viene chiamato <code>/api/admin/leads/:id</code> per
+              caricare step del wizard, media e analisi AI;</li>
+            <li>la scheda completa mostra:
+              <ul>
+                <li>tutti i dati di contatto e indirizzo;</li>
+                <li>dettaglio immobile (superficie, piano, ascensore, camere, bagni, spazi esterni, box/posti auto);</li>
+                <li>profilo e intenzioni (tipo profilo, proprietà, tempistiche vendita, volontà di contatto da agenzie, consenso marketing);</li>
+                <li>valutazione calcolata (range, prezzo medio, €/mq) con supporto anche per il vecchio formato aggregato;</li>
+                <li>lista allegati caricati (planimetrie/foto) con link diretti al download;</li>
+                <li>eventuali analisi AI sulle immagini, con descrizione e tag estratti.</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>Tab “Mappa comuni italiani” – vista Raggruppa</h3>
+      <p>
+        Implementata da <code>ContactsGroupsDashboard.jsx</code> (modalità predefinita), consente allo staff di
+        esplorare tutti i comuni italiani, filtrare i lead per CAP e periodo e preparare liste CSV
+        di contatti per attività mirate.
+      </p>
+      <ul>
+        <li><strong>Albero regioni/province/comuni</strong>:
+          dati da <code>gi_comuni_cap.json</code> e raggruppamento effettuato sul frontend;</li>
+        <li><strong>Filtri</strong>:
+          selezione regione → provincia → comune, filtro per CAP specifico e per intervallo di date;</li>
+        <li><strong>Nuovi contatti</strong>:
+          indicatori e badge “Nuovi contatti” in base all’ultimo accesso, con possibilità di segnare come letti
+          globalmente, per comune o per CAP;</li>
+        <li><strong>Tabella contatti del comune</strong>:
+          simile alla lista lead ma focalizzata sul comune selezionato, con selezione multipla per export;</li>
+        <li><strong>Export CSV</strong>:
+          pulsante “Esporta selezionati” che genera un file CSV con:
+          dati di contatto, indirizzo, caratteristiche immobile, esposizione, URL planimetrie/foto, profilo e
+          intenzioni e prezzo di valutazione;</li>
+        <li><strong>Scheda completa da Raggruppa</strong>:
+          per ogni riga è disponibile il bottone “Scheda completa” che apre l’overlay con gli stessi dati
+          della scheda completa della tab Contatti, inclusi:
+          valutazione, allegati, analisi AI e metadati OMI (semestre, tipologia, zone e fallback);</li>
+        <li><strong>Export singolo contatto</strong>:
+          dalla scheda completa è possibile scaricare un CSV dedicato al singolo lead (“Esporta contatto”).</li>
+      </ul>
+
+      <h4>Esempi API/JSON per la tab “Mappa comuni italiani”</h4>
+      <p>
+        La tab Raggruppa si appoggia alle stesse API admin dei contatti, in particolare:
+        <code>GET /api/admin/leads</code> per l’elenco lead e <code>GET /api/admin/leads/:id</code> per il
+        dettaglio di un singolo contatto, inclusi media e analisi AI.
+      </p>
+      <p>Esempio semplificato di risposta <code>GET /api/admin/leads</code> (usata per popolare i contatti per comune/CAP):</p>
+      <pre><code class="language-json">{
+  "items": [
+    {
+      "id": 123,
+      "created_at": "2026-02-27T10:15:00.000Z",
+      "nome": "Mario",
+      "cognome": "Rossi",
+      "email": "mario.rossi@example.com",
+      "telefono": "+39 333 1234567",
+      "indirizzo": "Via Roma 10",
+      "cap": "00100",
+      "citta": "Roma",
+      "media_meta": "{\"hasFloorplan\":true,\"photosCount\":6}",
+      "ai_analysis_meta": "{\"summary\":{\"aiDeltaValue\":15000}}",
+      "valuation_data": "{\"valutazione\":{\"prezzoMinimo\":230000,\"prezzoMassimo\":270000,\"prezzoMedio\":250000,\"prezzoAlMetroQuadro\":3200},\"metadati\":{\"semestre\":\"2024/2\",\"descrTipologia\":\"Abitazioni civili\",\"zoneCountUsed\":3}}",
+      "step_data": "{\"property\":{\"livingArea\":80,\"floor\":3,\"condition\":\"Ristrutturato\"},\"lead\":{\"profileType\":\"proprietario\",\"isOwner\":true,\"saleTiming\":\"3-6 mesi\",\"wantAgenciesValuation\":true}}"
+    }
+  ]
+}</code></pre>
+      <p>
+        Nel frontend, ogni elemento <code>item</code> viene convertito in un oggetto contatto con:
+        <code>mediaMeta</code>, <code>aiMeta</code>, <code>property</code>, <code>valuation</code> e
+        <code>wizardData</code> ottenuti facendo <code>JSON.parse()</code> sui campi stringa.
+      </p>
+      <p>Esempio semplificato di risposta <code>GET /api/admin/leads/:id</code> (scheda completa contatto):</p>
+      <pre><code class="language-json">{
+  "lead": {
+    "id": 123,
+    "created_at": "2026-02-27T10:15:00.000Z",
+    "nome": "Mario",
+    "cognome": "Rossi",
+    "email": "mario.rossi@example.com",
+    "telefono": "+39 333 1234567",
+    "indirizzo": "Via Roma 10",
+    "cap": "00100",
+    "citta": "Roma",
+    "valuation_data": "{\"valutazione\":{\"prezzoMinimo\":230000,\"prezzoMassimo\":270000,\"prezzoMedio\":250000,\"prezzoAlMetroQuadro\":3200},\"metadati\":{\"semestre\":\"2024/2\",\"descrTipologia\":\"Abitazioni civili\",\"zoneCountUsed\":3,\"numComuniForCap\":2,\"fallbackReason\":null}}",
+    "step_data": "{\"property\":{\"livingArea\":80,\"floor\":3,\"condition\":\"Ristrutturato\",\"balconyArea\":8},\"lead\":{\"profileType\":\"proprietario\",\"isOwner\":true,\"saleTiming\":\"3-6 mesi\",\"wantAgenciesValuation\":true,\"marketingConsent\":true}}"
+  },
+  "media": [
+    {
+      "id": 1,
+      "type": "planimetria",
+      "file_url": "/uploads/planimetria_123.pdf",
+      "original_name": "planimetria.pdf"
+    },
+    {
+      "id": 2,
+      "type": "foto",
+      "file_url": "/uploads/foto_123_1.jpg",
+      "original_name": "soggiorno.jpg"
+    }
+  ],
+  "ai": [
+    {
+      "id": 10,
+      "summary": "{\"aiDeltaValue\":15000,\"tags\":[\"planimetria_disponibile\",\"foto_abbastanza\"]}",
+      "extracted_features": "{\"conditionScore\":0.76}"
+    }
+  ]
+}</code></pre>
+      <p>
+        La tab Raggruppa usa questo JSON per:
+      </p>
+      <ul>
+        <li>ricostruire <code>property</code> e <code>lead</code> da <code>step_data</code>;</li>
+        <li>ricostruire <code>valuation</code> da <code>valuation_data</code>, compresi <code>metadati</code> OMI;</li>
+        <li>generare le URL assolute dei file media combinando <code>VITE_API_BASE_URL</code> e <code>file_url</code>;</li>
+        <li>mostrare, nella sezione Analisi AI, il contenuto di <code>summary</code> e <code>extracted_features</code>.</li>
+      </ul>
+
+      <h3>Tab “Raggruppamento automatico”</h3>
+      <p>
+        La modalità <code>mode="autoGrouping"</code> di <code>ContactsGroupsDashboard.jsx</code> crea gruppi automatici
+        di 5 contatti con lo stesso CAP per regione/provincia/comune, pensati per iniziative commerciali
+        sul territorio.
+      </p>
+      <ul>
+        <li>Per ciascun gruppo sono visibili:
+          regione, provincia, comune, CAP, numero del gruppo e data dell’ultimo contatto nel gruppo;</li>
+        <li>i gruppi sono marcati come “nuovi” in base a un timestamp salvato in <code>localStorage</code>, con
+          possibilità di segnarli come letti;</li>
+        <li>per ogni gruppo è possibile espandere la lista contatti e esportare l’intero gruppo in CSV (“Esporta gruppo”).</li>
+      </ul>
+
+      <h3>Tab “Statistiche landing province”</h3>
+      <p>
+        Anche questa tab è realizzata da <code>ContactsDashboard.jsx</code> (<code>mode="analytics"</code>) e lavora sui
+        dati della tabella <code>province_analytics</code> del backend.
+      </p>
+      <ul>
+        <li><strong>Filtri</strong>:
+          <ul>
+            <li>intervallo temporale (ultimi 7/30/90 giorni);</li>
+            <li>granularità dei bucket (giorno, settimana, mese);</li>
+            <li>filtro testuale per <code>province_slug</code>.</li>
+          </ul>
+        </li>
+        <li><strong>Grafico “Andamento visite”</strong>:
+          bar chart delle visite aggregate per intervallo selezionato, calcolato da <code>analyticsSeriesData</code>;</li>
+        <li><strong>Lista “Visite per provincia”</strong>:
+          elenco delle province con, per ciascuna:
+          visualizzazioni pagina, sessioni, utenti unici e durata media della sessione.</li>
+      </ul>
+
+      <h3>Tab “Registro trattamenti”</h3>
+      <p>
+        Tab statica che descrive in forma sintetica il registro dei trattamenti legato al valutatore
+        (finalità, categorie di dati, interessati, base giuridica, tempi di conservazione). È pensata
+        come supporto operativo al registro formale ai sensi dell’art. 30 GDPR.
+      </p>
+
+      <h2>Come usare la dashboard nella pratica</h2>
+      <h3>Scenario: trovare tutti i lead nuovi su un CAP e prepararne l’export per un’agenzia</h3>
+      <ol>
+        <li><strong>Accedi alla dashboard admin</strong>:
+          apri l’app con il parametro <code>?admin=...</code>, effettua il login e vai alla tab
+          <em>Mappa comuni italiani</em>.</li>
+        <li><strong>Scegli area geografica</strong>:
+          seleziona regione, provincia e poi il comune di interesse dall’albero.</li>
+        <li><strong>Filtra per CAP</strong>:
+          nella sezione contatti del comune, imposta il filtro CAP con il valore desiderato
+          (es. <code>00100</code>). Puoi opzionalmente impostare un intervallo di date per considerare solo
+          i lead recenti (es. ultimi 7/30 giorni).</li>
+        <li><strong>Isola i lead “nuovi”</strong>:
+          usa i badge di “nuovi contatti” (calcolati rispetto al timestamp memorizzato) per capire quali
+          lead non sono ancora stati visti. Se vuoi ripartire da zero, utilizza le azioni “segna come letti”
+          globali, per comune o per CAP.</li>
+        <li><strong>Seleziona i lead per l’agenzia</strong>:
+          nella tabella dei contatti filtrati, seleziona tutte le righe rilevanti per il CAP (puoi fare
+          “seleziona tutto” o una selezione manuale).</li>
+        <li><strong>Esporta in CSV</strong>:
+          premi “Esporta selezionati”: verrà generato un CSV con i campi utili per l’agenzia
+          (dati di contatto, indirizzo, caratteristiche immobile, media, profilo, intenzioni, prezzo di
+          valutazione). Il file può essere aperto direttamente in Excel o importato in un CRM.</li>
+        <li><strong>Approfondisci singoli lead se necessario</strong>:
+          per i contatti più interessanti, fai clic su “Scheda completa” per consultare i dettagli, verificare
+          planimetrie/foto, leggere la valutazione e vedere i metadati OMI e la sintesi AI prima di inoltrarli
+          all’agenzia.</li>
+      </ol>
+
+      <h2>Servizi frontend – OMI & geocoding</h2>
+      <ul>
+        <li><code>realOmiService.js</code>:
+          database sintetico di CAP/prefissi italiani e logica di inferenza regionale per generare min/avg/max €/mq.</li>
+        <li><code>omiService.js</code>:
+          wrapper che usa <code>getRealOmiValues</code> e fallback forzati per non fallire mai, producendo sempre valori.</li>
+        <li><code>enhancedAddressService.js</code>:
+          combina:
+          <ul>
+            <li>database locale di vie principali per varie città;</li>
+            <li>API pubbliche Nominatim (OpenStreetMap) e Photon;</li>
+            <li>meccanismo di deduplica e rank per suggerimenti;</li>
+            <li>reverse geocoding per ricavare CAP e info OMI (regione, comune, zona).</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Sezione: valutazione dettagliata -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Dettagli del motore di valutazione</div>
+          <div class="section-caption">
+            Come vengono usati i dati OMI ufficiali e sintetici per calcolare il prezzo.
+          </div>
+        </div>
+      </div>
+
+      <h2>1. Dati in ingresso</h2>
+      <ul>
+        <li><strong>Indirizzo</strong>:
+          oggetto con almeno <code>postcode</code>, <code>city</code>, <code>state</code>,
+          <code>lat</code>, <code>lon</code>, ottenuto da autocomplete e arricchimento CAP.</li>
+        <li><strong>Proprietà</strong>:
+          superficie principale, superfici accessorie (balcone, terrazzo, giardino, ecc.),
+          piano, ascensore, stato, tipologia.</li>
+      </ul>
+
+      <h2>2. Fase precalcolo OMI sintetico lato FE</h2>
+      <p>
+        Quando l’utente seleziona un indirizzo, il frontend recupera subito un set di valori OMI
+        sintetici via <code>getOmiValues</code>. Questi servono come base di fallback se il backend non è disponibile
+        o se si vuole fare un calcolo locale.
+      </p>
+
+      <h2>3. Valutazione principale lato backend</h2>
+      <ul>
+        <li>Il frontend chiama <code>/api/valuation/enhanced-omi</code> con <code>{ address, property }</code>.</li>
+        <li>Il backend decide se usare modalità strict o meno:
+          <ul>
+            <li><code>OFFICIAL_MODE_STRICT</code> (env) e parametri query <code>officialModeStrict</code>/<code>forceOfficial</code>.</li>
+          </ul>
+        </li>
+        <li>Viene chiamata <code>buildCapBasedValuation(address, property, { fallbackMode, strictMode })</code>.</li>
+      </ul>
+
+      <h2>4. Uso OMI ufficiale</h2>
+      <ul>
+        <li>Lookup comune a partire dal CAP (`findComuniByCap`).</li>
+        <li>Se più comuni condividono lo stesso CAP, il codice cerca di disambiguare usando <code>city</code> e
+          <code>province</code>.</li>
+        <li>Recupero semestre OMI più recente (attivo, altrimenti l’ultimo presente).</li>
+        <li>Calcolo range comunale MIN/MAX €/mq per la tipologia corrispondente alla proprietà.</li>
+        <li>Caso positivo:
+          <ul>
+            <li><code>prezzoAlMetroQuadro</code> = media tra min e max comunale.</li>
+            <li>Prezzo minimo/medio/massimo = min/avg/max * superficie.</li>
+            <li><code>omiData.reliability = 'UFFICIALE_COMUNALE'</code>.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h2>5. Fallback sintetico</h2>
+      <p>
+        Se non esiste un range OMI ufficiale valido o se la lettura del DB fallisce, il codice passa a un
+        fallback sintetico (a meno che non sia in modalità strict).
+      </p>
+      <ul>
+        <li>Chiama <code>getRealOmiValues(cap)</code>:
+          <ul>
+            <li>prima cerca un match 5-cifre nel database CAP interno,</li>
+            <li>poi prefisso 3-cifre, poi 2-cifre,</li>
+            <li>altrimenti calcola prezzi in base a regione e zona dedotte.</li>
+          </ul>
+        </li>
+        <li>Calcola <code>prezzoAlMetroQuadro</code> = <code>avg</code> sintetico e applica uno spread ±15% per min/max.</li>
+        <li>Indica la natura sintetica in <code>metadati.metodologia</code> e <code>metadati.fonti</code>.</li>
+      </ul>
+
+      <h2>6. Aggiustamento in base ai media</h2>
+      <p>
+        Se l’utente carica una planimetria e/o foto, il backend calcola un piccolo punteggio di confidenza
+        (<code>conditionScore</code>) e il frontend lo usa per spostare il prezzo finale entro un range ±8%.
+      </p>
+      <ul>
+        <li>Più foto e una planimetria aumentano leggermente il prezzo.</li>
+        <li>Pochi o nessun media tendono a ridurlo entro i limiti configurati.</li>
+      </ul>
+    </section>
+
+    <!-- Run / Test / Config -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Guida esecuzione, test e configurazione</div>
+          <div class="section-caption">
+            Comandi principali e variabili d’ambiente per sviluppo e Docker.
+          </div>
+        </div>
+      </div>
+
+      <h2>Avvio in sviluppo</h2>
+      <ul>
+        <li>Prerequisiti:
+          <ul>
+            <li>Node &ge; 18</li>
+            <li>npm</li>
+          </ul>
+        </li>
+        <li>Installazione:
+          <pre><code>npm install</code></pre>
+        </li>
+        <li>Avvio frontend (Vite):
+          <pre><code>npm run dev</code></pre>
+        </li>
+        <li>Avvio backend:
+          <pre><code>npm run server</code></pre>
+        </li>
+      </ul>
+
+      <h3>Config locale suggerita</h3>
+      <pre><code>PORT=4000
+ADMIN_USER=admin@example.com
+# Scegli UNA sola modalità di password:
+ADMIN_PASS_HASH=&lt;hash bcrypt&gt;     # consigliato
+# oppure SOLO per sviluppo:
+ADMIN_PASS=&lt;password in chiaro&gt;
+
+ADMIN_TOTP_SECRET=&lt;se usi 2FA&gt;
+ADMIN_ALLOWED_ORIGINS=http://localhost,http://localhost:5173
+
+OMI_DB_PATH=./data/omi_official.sqlite
+OMI_FALLBACK_MODE=synthetic
+OFFICIAL_MODE_STRICT=0
+
+VITE_API_BASE_URL=http://localhost:4000/api
+VITE_USE_MOCKS=false</code></pre>
+
+      <h2>Avvio in Docker</h2>
+      <ul>
+        <li>Build e run:
+          <pre><code>docker compose -f docker-compose.prod.yml up --build</code></pre>
+        </li>
+        <li>Frontend:</li>
+        <ul>
+          <li>disponibile su <code>http://localhost/</code>.</li>
+        </ul>
+        <li>Backend:</li>
+        <ul>
+          <li>raggiunto internamente come <code>http://backend:4000</code>.</li>
+          <li>frontend lo richiama tramite <code>/api</code> (Nginx).</li>
+        </ul>
+      </ul>
+
+      <h2>Lint e (eventuali) test</h2>
+      <ul>
+        <li>Lint:
+          <pre><code>npm run lint</code></pre>
+        </li>
+        <li>Non risultano test automatizzati configurati in <code>package.json</code>
+          (deduzione a partire dagli script presenti).</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Test completo di codice e tabelle</div>
+          <div class="section-caption">
+            Esecuzione reale di 20 casi italiani sul backend, con risultati pronti per confronto.
+          </div>
+        </div>
+      </div>
+
+      <h2>Scenario del test</h2>
+      <p>
+        Il test è stato eseguito direttamente sul backend reale, usando l’endpoint:
+      </p>
+      <pre><code>POST /api/valuation/enhanced-omi
+Porta: 4001
+Modalità di default: fallback=synthetic, officialModeStrict=false</code></pre>
+
+      <p>
+        È stato utilizzato lo script batch già presente nel progetto
+        (<code>scripts/run-api-batch-valuation.mjs</code>), impostato su 20 casi e collegato al server.
+        Lo script genera automaticamente casi reali su CAP/comuni italiani che hanno dati OMI ufficiali e,
+        per ciascun caso, invia una richiesta al backend con:
+      </p>
+      <ul>
+        <li>indirizzo completo,</li>
+        <li>metratura (Mq),</li>
+        <li>calcolo del prezzo minimo API,</li>
+        <li>calcolo del prezzo stimato API (prezzo medio),</li>
+        <li>calcolo del prezzo massimo API.</li>
+      </ul>
+      <p>
+        Tutti gli importi sono in euro e sono calcolati usando la stessa logica che il frontend utilizza
+        quando chiama l’endpoint di valutazione avanzata.
+      </p>
+
+      <h2>Tabella dei 20 casi reali</h2>
+      <p>
+        Di seguito una tabella sintetica con i 20 casi reali generati automaticamente (tutti basati su CAP
+        presenti nel database OMI ufficiale). Per ciascuna riga sono riportati:
+        numero progressivo, indirizzo completo, metratura e i tre valori di prezzo calcolati dal tuo
+        programma.
+      </p>
+      <pre><code>#  Indirizzo completo                                                                                  Mq   Prezzo minimo API   Prezzo stimato API   Prezzo massimo API
+1  Via Manzoni 121, 98036 Gualtieri Sicaminò (Messina), Sicilia                                      103  57.680              71.585               85.490
+2  Corso Italia 144, 13815 Rosazza (Biella), Piemonte                                                 46  17.250              21.505               25.760
+3  Via Cavour 123, 28801 Cossogno (Verbano-Cusio-Ossola), Piemonte                                    75  78.750              90.000               101.250
+4  Via delle Rose 118, 65017 Penne (Pescara), Abruzzo                                                112  50.400              84.000               117.600
+5  Via Vittorio Veneto 127, 31037 Mansuè (Treviso), Veneto                                            63  54.810              62.055               69.300
+6  Via Vittorio Veneto 20, 02023 Fiamignano (Rieti), Lazio                                            43  23.650              30.100               36.550
+7  Via dei Tigli 31, 35136 Padova (Padova), Veneto                                                   105  68.250              280.875              493.500
+8  Via dei Tigli 152, 75017 Salandra (Matera), Basilicata                                             48  19.920              27.960               36.000
+9  Corso Italia 175, 38077 Comano Terme (Trento), Trentino-Alto Adige/Südtirol                       129  154.800             212.850              270.900
+10 Via Manzoni 151, 86085 Pizzone (Isernia), Molise                                                   43  16.340              20.425               24.510
+11 Via delle Rose 167, 87015 Laino Castello (Cosenza), Calabria                                      111  42.180              46.620               51.060
+12 Via Napoli 178, 71036 Lucera (Foggia), Puglia                                                      170  110.500             148.750              187.000
+13 Via Leopardi 167, 83035 Grottaminarda (Avellino), Campania                                        152  75.240              128.820              182.400
+14 Via Roma 3, 73012 Campi Salentina (Lecce), Puglia                                                  96  44.640              58.800               72.960
+15 Via Cavour 193, 89831 Gerocarne (Vibo Valentia), Calabria                                          54  55.080              64.800               74.520
+16 Via Manzoni 98, 81010 Ailano (Caserta), Campania                                                   89  40.050              48.950               57.850
+17 Via dei Tigli 56, 80031 Brusciano (Napoli), Campania                                               49  46.060              64.680               83.300
+18 Via Verdi 56, 39022 Lagundo (Bolzano/Bozen), Trentino-Alto Adige/Südtirol                          48  67.200              129.600              192.000
+19 Via Firenze 124, 19136 La Spezia (La Spezia), Liguria                                             105  84.000              189.000              294.000
+20 Via Trieste 192, 33077 Sacile (Pordenone), Friuli-Venezia Giulia                                  115  97.750              163.875              230.000</code></pre>
+
+      <p>
+        Questi 20 casi sono tutti:
+      </p>
+      <ul>
+        <li>basati su CAP reali presenti nel database OMI ufficiale,</li>
+        <li>valutati dall’endpoint <code>/api/valuation/enhanced-omi</code> con la stessa logica usata dal frontend,</li>
+        <li>con poligoni e range OMI comunali reali (tutti i casi sono
+          <code>omi-ufficiale-comunale</code>, tranne uno che usa fallback CAP ma sempre calcolato dal
+          motore di valutazione).</li>
+      </ul>
+
+      <h2>Come confrontare i risultati con un competitor</h2>
+      <p>
+        Per utilizzare questi dati in un confronto diretto con un altro strumento di valutazione:
+      </p>
+      <ol>
+        <li>
+          Per ciascuna riga della tabella, inserire nel sito del competitor:
+          <ul>
+            <li>lo stesso indirizzo (almeno CAP + comune + via + civico),</li>
+            <li>la stessa metratura (Mq).</li>
+          </ul>
+        </li>
+        <li>
+          Rilevare dal competitor:
+          <ul>
+            <li>prezzo minimo,</li>
+            <li>prezzo “medio/stimato”,</li>
+            <li>prezzo massimo.</li>
+          </ul>
+        </li>
+        <li>
+          Mettere affiancati, per ogni caso, i tre valori (min/stimato/max) del tuo tool e quelli del
+          competitor, per verificare la coerenza delle valutazioni.
+        </li>
+      </ol>
+    </section>
+
+    <!-- Runbook operativo -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Runbook operativo</div>
+          <div class="section-caption">
+            Cosa controllare in caso di problemi con login admin, OMI o autocomplete.
+          </div>
+        </div>
+      </div>
+
+      <h2>1. L’app non si apre in Docker</h2>
+      <ul>
+        <li>Controllare lo stato dei container:
+          <pre><code>docker ps</code></pre>
+        </li>
+        <li>Verificare log frontend (Nginx):
+          <pre><code>docker compose logs frontend</code></pre>
+        </li>
+        <li>Se il frontend segnala problemi di backend:
+          <ul>
+            <li>controllare che il servizio <code>backend</code> sia in stato <code>healthy</code> (healthcheck su <code>/health</code>).</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h2>2. Login admin fallisce (500 o errori CORS)</h2>
+      <ul>
+        <li>Verificare variabili backend:
+          <ul>
+            <li><code>ADMIN_USER</code> impostato;</li>
+            <li><code>ADMIN_PASS_HASH</code> o <code>ADMIN_PASS</code> configurati.</li>
+          </ul>
+        </li>
+        <li>Verificare <code>ADMIN_ALLOWED_ORIGINS</code> include l’origin del browser
+          (es: <code>http://localhost</code>).</li>
+        <li>Controllare log backend:
+          <pre><code>docker compose logs backend</code></pre>
+        </li>
+      </ul>
+
+      <h2>3. Valutazione sempre “sintetica” (nessun dato OMI ufficiale)</h2>
+      <ul>
+        <li>Verificare percorso <code>OMI_DB_PATH</code> e presenza del file <code>omi_official.sqlite</code>.</li>
+        <li>Se necessario, rieseguire lo script di import OMI
+          (dedotto da <code>npm run import:omi</code>).</li>
+        <li>Controllare log per errori <code>SQLITE_CANTOPEN</code> o similari.</li>
+      </ul>
+
+      <h2>4. Autocomplete non propone risultati</h2>
+      <ul>
+        <li>Controllare console del browser per messaggi:
+          <code>Nominatim API fallita</code>, <code>Photon API fallita</code>.</li>
+        <li>Verificare che la macchina abbia accesso HTTP verso internet
+          (Nominatim, Photon).</li>
+      </ul>
+
+      <h2>5. Miglioramenti raccomandati (priorità)</h2>
+      <ul>
+        <li><strong>Trasparenza sulla fonte dati</strong>:
+          rendere sempre evidente all’utente se il dato è OMI ufficiale o sintetico.</li>
+        <li><strong>Sicurezza admin</strong>:
+          usare solo <code>ADMIN_PASS_HASH</code> in produzione; rimuovere la dipendenza da password in chiaro.</li>
+        <li><strong>Indici DB</strong>:
+          aggiungere indici su colonne usate nei filtri (es. <code>created_at</code>, <code>cap</code>,
+          <code>province_slug</code>, <code>event_type</code>).</li>
+        <li><strong>Refactoring App.jsx</strong>:
+          suddividerlo in container specifici (wizard, admin, blog) e introdurre test.</li>
+        <li><strong>Test automatici</strong>:
+          almeno per endpoint chiave di valutazione e login admin.</li>
+      </ul>
+    </section>
+
+    <footer class="section" style="margin-top: 24px;">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Come usare questo file</div>
+          <div class="section-caption">
+            Salva, apri nel browser, continua ad aggiornarlo a mano quando cambia il codice.
+          </div>
+        </div>
+      </div>
+      <p class="small">
+        1. Copia tutto il contenuto di questa pagina in un file, ad esempio
+        <code>documentazione-valutatore.html</code>.<br />
+        2. Aprilo con un doppio clic o trascinandolo nel browser.<br />
+        3. I diagrammi Mermaid verranno renderizzati automaticamente dal browser grazie allo script
+        <code>mermaid.min.js</code> incluso in &lt;head&gt;.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

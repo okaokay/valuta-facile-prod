@@ -1,0 +1,16 @@
+#
+# llms.txt – direttive per l'accesso delle AI generative a Valuta Facile
+#
+
+version: 1
+
+user-agent: *
+
+# Contenuti che possono essere indicizzati e usati per risposte e navigazione semantica
+allow: /
+
+# Aree riservate o sensibili da escludere
+disallow: /admin
+disallow: /api/
+disallow: /contacts-dashboard
+
