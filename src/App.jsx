@@ -6520,11 +6520,6 @@ function App() {
                         )}
                       </div>
                     )}
-
-                    <p className="mt-4 text-[11px] text-gray-400">
-                      Dati di mercato: RealAdvisor. Per una stima specifica del tuo immobile usa lo strumento
-                      di Valuta Facile qui sopra, basato su dati ufficiali OMI.
-                    </p>
                   </div>
                 )}
 
