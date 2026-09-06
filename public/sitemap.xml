@@ -1,56 +1,148 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.valutafacile.it/</loc>
+    <loc>https://valutafacile.it/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog</loc>
+    <loc>https://valutafacile.it/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/privacy</loc>
+    <loc>https://valutafacile.it/valutazione-casa-pescara</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/valutazione-casa-pescara</loc>
+    <loc>https://valutafacile.it/valutazione-casa-roma</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/come-capire-valutazione-immobile-realistica</loc>
-    <lastmod>2024-01-15</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-milano</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/prezzi-case-italia-2024</loc>
-    <lastmod>2024-01-22</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-napoli</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/errori-che-abbassano-valore-immobile</loc>
-    <lastmod>2024-01-29</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-torino</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/cosa-cercano-acquirenti-in-casa</loc>
-    <lastmod>2024-02-05</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-bologna</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/lavori-che-aumentano-valore-casa</loc>
-    <lastmod>2024-02-12</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-firenze</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/tasso-mutuo-e-prezzo-di-vendita</loc>
-    <lastmod>2024-02-19</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-bari</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/vendere-o-mettere-a-reddito</loc>
-    <lastmod>2024-02-26</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-chieti</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/documenti-per-vendita-casa</loc>
-    <lastmod>2024-03-04</lastmod>
+    <loc>https://valutafacile.it/valutazione-casa-teramo</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/preparare-casa-per-le-visite</loc>
-    <lastmod>2024-03-11</lastmod>
+    <loc>https://valutafacile.it/domande-frequenti</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.valutafacile.it/blog/prima-impressione-nella-vendita-di-casa</loc>
-    <lastmod>2024-03-18</lastmod>
+    <loc>https://valutafacile.it/contatti</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/centro-assistenza</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/termini-di-utilizzo</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/come-capire-valutazione-immobile-realistica</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/prezzi-case-italia-2024</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/errori-che-abbassano-valore-immobile</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/cosa-cercano-acquirenti-in-casa</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/lavori-che-aumentano-valore-casa</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/tasso-mutuo-e-prezzo-di-vendita</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/vendere-o-mettere-a-reddito</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/documenti-per-vendita-casa</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/preparare-casa-per-le-visite</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://valutafacile.it/blog/prima-impressione-nella-vendita-di-casa</loc>
+    <lastmod>2026-09-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>
-

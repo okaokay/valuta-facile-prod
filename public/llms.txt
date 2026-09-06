@@ -1,16 +1,33 @@
-#
-# llms.txt – direttive per l'accesso delle AI generative a Valuta Facile
-#
+# Valuta Facile
 
-version: 1
+> Valuta Facile è una piattaforma italiana di valutazione immobiliare online: in pochi minuti calcola una stima del valore di un immobile basata sui dati ufficiali OMI (Osservatorio del Mercato Immobiliare, Agenzia delle Entrate) e su dati di mercato aggiornati, con un percorso guidato e spiegazioni chiare (nessuna registrazione obbligatoria per iniziare).
 
-user-agent: *
+## Prodotto
 
-# Contenuti che possono essere indicizzati e usati per risposte e navigazione semantica
-allow: /
+- [Valutazione immobiliare online](https://valutafacile.it/home): percorso guidato per stimare il valore di un immobile a partire dall'indirizzo, con fascia di prezzo basata sui dati OMI ufficiali per zona.
+- Pagine città con dati di mercato locali (prezzo al mq, trend, vendite e affitti): [Pescara](https://valutafacile.it/valutazione-casa-pescara), [Roma](https://valutafacile.it/valutazione-casa-roma), [Milano](https://valutafacile.it/valutazione-casa-milano), [Napoli](https://valutafacile.it/valutazione-casa-napoli), [Torino](https://valutafacile.it/valutazione-casa-torino), [Bologna](https://valutafacile.it/valutazione-casa-bologna), [Firenze](https://valutafacile.it/valutazione-casa-firenze), [Bari](https://valutafacile.it/valutazione-casa-bari), [Chieti](https://valutafacile.it/valutazione-casa-chieti), [Teramo](https://valutafacile.it/valutazione-casa-teramo).
 
-# Aree riservate o sensibili da escludere
-disallow: /admin
-disallow: /api/
-disallow: /contacts-dashboard
+## Blog
 
+- [Blog Valuta Facile](https://valutafacile.it/blog): guide pratiche su valutazione immobiliare, mercato, vendita e acquisto casa.
+- [Come capire se la valutazione del tuo immobile è realistica](https://valutafacile.it/blog/come-capire-valutazione-immobile-realistica)
+- [Cosa sta succedendo ai prezzi delle case in Italia](https://valutafacile.it/blog/prezzi-case-italia-2024)
+- [Errori che abbassano il valore di un immobile](https://valutafacile.it/blog/errori-che-abbassano-valore-immobile)
+- [Cosa cercano davvero gli acquirenti in una casa](https://valutafacile.it/blog/cosa-cercano-acquirenti-in-casa)
+- [Lavori che aumentano il valore di una casa](https://valutafacile.it/blog/lavori-che-aumentano-valore-casa)
+- [Tasso mutuo e prezzo di vendita](https://valutafacile.it/blog/tasso-mutuo-e-prezzo-di-vendita)
+- [Vendere o mettere a reddito](https://valutafacile.it/blog/vendere-o-mettere-a-reddito)
+- [Documenti necessari per la vendita di una casa](https://valutafacile.it/blog/documenti-per-vendita-casa)
+- [Come preparare la casa per le visite](https://valutafacile.it/blog/preparare-casa-per-le-visite)
+- [L'importanza della prima impressione nella vendita di una casa](https://valutafacile.it/blog/prima-impressione-nella-vendita-di-casa)
+
+## Assistenza
+
+- [Domande frequenti](https://valutafacile.it/domande-frequenti): risposte alle domande più comuni su come funziona la valutazione, i dati usati e i tempi.
+- [Contatti](https://valutafacile.it/contatti): modulo di contatto per domande, collaborazioni e partnership.
+- [Centro assistenza](https://valutafacile.it/centro-assistenza): supporto tecnico e sull'account.
+
+## Note
+
+- Le pagine sotto `/admin` e le rotte `/api/` non sono destinate all'indicizzazione o alla citazione.
+- I dati di valutazione mostrati si basano su fonti ufficiali (OMI, Agenzia delle Entrate) e, per i dati di mercato aggiuntivi, su un accordo commerciale con RealAdvisor.

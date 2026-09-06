@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /contacts-dashboard
+
+Sitemap: https://valutafacile.it/sitemap.xml

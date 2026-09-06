@@ -938,6 +938,8 @@ function App() {
   }, [])
   const [currentProvinceSlug, setCurrentProvinceSlug] = useState(null)
   const currentProvinceName = currentProvinceSlug ? slugToProvinceName(currentProvinceSlug) : ''
+  const [provinceMarketData, setProvinceMarketData] = useState(null)
+  const [provinceMarketDataLoading, setProvinceMarketDataLoading] = useState(false)
   const [wizardData, setWizardData] = useState({
     propertyType: null,
     features: {
@@ -1172,7 +1174,204 @@ function App() {
       document.head.appendChild(meta)
     }
     meta.content = description
+
+    let canonicalPath = '/'
+    if (currentPage === 'blog') canonicalPath = '/blog'
+    else if (currentPage === 'blog-detail' && currentBlogArticle) {
+      canonicalPath = `/blog/${currentBlogArticle.slug}`
+    } else if (currentPage === 'province-landing' && currentProvinceSlug) {
+      canonicalPath = `/valutazione-casa-${currentProvinceSlug}`
+    } else if (currentPage === 'privacy') canonicalPath = '/privacy'
+    else if (currentPage === 'terms') canonicalPath = '/termini-di-utilizzo'
+    else if (currentPage === 'cookies') canonicalPath = '/cookie-consenso'
+    else if (currentPage === 'contact') canonicalPath = '/contatti'
+    else if (currentPage === 'support') canonicalPath = '/centro-assistenza'
+    else if (currentPage === 'faq') canonicalPath = '/domande-frequenti'
+    else if (currentPage === 'test_home') canonicalPath = '/home'
+
+    let canonicalLink = document.querySelector('link[rel="canonical"]')
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link')
+      canonicalLink.rel = 'canonical'
+      document.head.appendChild(canonicalLink)
+    }
+    canonicalLink.href = `https://valutafacile.it${canonicalPath}`
+
+    const setOgMeta = (property, content) => {
+      let tag = document.querySelector(`meta[property="${property}"]`)
+      if (!tag) {
+        tag = document.createElement('meta')
+        tag.setAttribute('property', property)
+        document.head.appendChild(tag)
+      }
+      tag.setAttribute('content', content)
+    }
+    setOgMeta('og:title', title)
+    setOgMeta('og:description', description)
+    setOgMeta('og:url', `https://valutafacile.it${canonicalPath}`)
+    setOgMeta('og:type', canonicalPath.startsWith('/blog/') ? 'article' : 'website')
   }, [currentPage, currentBlogArticle, currentProvinceSlug])
+
+  // JSON-LD (schema.org): Organization + WebSite sempre presenti; BreadcrumbList
+  // e FAQPage aggiunti/rimossi in base alla pagina corrente. Iniettati come
+  // <script> nel <head> (identificati da id, un solo tag per tipo) invece che
+  // nella JSX di ogni pagina, così funzionano per qualunque pagina senza dover
+  // toccare ogni singolo blocco di render.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const upsertLdJson = (id, data) => {
+      if (!data) {
+        const existing = document.getElementById(id)
+        if (existing) existing.remove()
+        return
+      }
+      let script = document.getElementById(id)
+      if (!script) {
+        script = document.createElement('script')
+        script.type = 'application/ld+json'
+        script.id = id
+        document.head.appendChild(script)
+      }
+      script.textContent = JSON.stringify(data)
+    }
+
+    const SITE_URL = 'https://valutafacile.it'
+
+    upsertLdJson('ld-organization', {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: 'Valuta Facile',
+      legalName: "Marconi 138 S.r.l.",
+      url: SITE_URL,
+      logo: `${SITE_URL}/assets/Risorsa 2.png`,
+      email: 'info@valutafacile.it',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: "Via F. Ferdinando D'Avalos 66",
+        postalCode: '65126',
+        addressLocality: 'Pescara',
+        addressRegion: 'PE',
+        addressCountry: 'IT'
+      }
+    })
+
+    upsertLdJson('ld-website', {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: 'Valuta Facile',
+      publisher: { '@id': `${SITE_URL}/#organization` },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: `${SITE_URL}/blog?q={search_term_string}`
+        },
+        'query-input': 'required name=search_term_string'
+      }
+    })
+
+    const breadcrumbList = (items) => ({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: item.name,
+        item: `${SITE_URL}${item.path}`
+      }))
+    })
+
+    if (currentPage === 'blog') {
+      upsertLdJson('ld-breadcrumb', breadcrumbList([
+        { name: 'Home', path: '/home' },
+        { name: 'Blog', path: '/blog' }
+      ]))
+    } else if (currentPage === 'blog-detail' && currentBlogArticle) {
+      upsertLdJson('ld-breadcrumb', breadcrumbList([
+        { name: 'Home', path: '/home' },
+        { name: 'Blog', path: '/blog' },
+        { name: currentBlogArticle.title, path: `/blog/${currentBlogArticle.slug}` }
+      ]))
+    } else if (currentPage === 'province-landing' && currentProvinceSlug) {
+      const provinceName = slugToProvinceName(currentProvinceSlug)
+      upsertLdJson('ld-breadcrumb', breadcrumbList([
+        { name: 'Home', path: '/home' },
+        { name: `Valutazione casa a ${provinceName}`, path: `/valutazione-casa-${currentProvinceSlug}` }
+      ]))
+    } else if (currentPage === 'faq') {
+      upsertLdJson('ld-breadcrumb', breadcrumbList([
+        { name: 'Home', path: '/home' },
+        { name: 'Domande frequenti', path: '/domande-frequenti' }
+      ]))
+    } else {
+      upsertLdJson('ld-breadcrumb', null)
+    }
+
+    if (currentPage === 'faq') {
+      upsertLdJson('ld-faq', {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: FAQ_PAGE_ITEMS.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer
+          }
+        }))
+      })
+    } else if (
+      currentPage === 'blog-detail' &&
+      currentBlogArticle &&
+      Array.isArray(currentBlogArticle.faq) &&
+      currentBlogArticle.faq.length > 0
+    ) {
+      upsertLdJson('ld-faq', {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: currentBlogArticle.faq.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer
+          }
+        }))
+      })
+    } else {
+      upsertLdJson('ld-faq', null)
+    }
+  }, [currentPage, currentBlogArticle, currentProvinceSlug])
+
+  useEffect(() => {
+    if (currentPage !== 'province-landing' || !currentProvinceSlug) {
+      setProvinceMarketData(null)
+      return
+    }
+    let cancelled = false
+    setProvinceMarketDataLoading(true)
+    const base = (
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+    ).replace(/\/+$/, '')
+    fetch(`${base}/mercato/${encodeURIComponent(currentProvinceSlug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled) setProvinceMarketData(data?.market || null)
+      })
+      .catch(() => {
+        if (!cancelled) setProvinceMarketData(null)
+      })
+      .finally(() => {
+        if (!cancelled) setProvinceMarketDataLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [currentPage, currentProvinceSlug])
 
   useEffect(() => {
     try {
@@ -6168,23 +6367,24 @@ function App() {
                   <div className="space-y-5 text-sm sm:text-base text-gray-800">
                     <p>
                     {currentProvinceName
-                      ? `Il mercato di ${currentProvinceName} e dei comuni vicini ha dinamiche specifiche: zone centrali, quartieri residenziali e aree più periferiche reagiscono in modo diverso ai cambiamenti dei tassi e della domanda.`
-                      : 'Il mercato immobiliare locale ha dinamiche specifiche: zone centrali, quartieri residenziali e aree più periferiche reagiscono in modo diverso ai cambiamenti dei tassi e della domanda.'}
+                      ? `A ${currentProvinceName} il prezzo al metro quadro cambia molto da zona a zona: le vie centrali, i quartieri residenziali e le aree più periferiche seguono andamenti diversi. Per questo una stima seria non può basarsi solo su una media cittadina.`
+                      : 'Il prezzo al metro quadro cambia molto da zona a zona: le vie centrali, i quartieri residenziali e le aree più periferiche seguono andamenti diversi. Per questo una stima seria non può basarsi solo su una media cittadina.'}
                     </p>
                     <p>
-                      Con Valuta Facile puoi ottenere in pochi minuti una stima aggiornata del valore del tuo
-                      immobile, partendo dall&apos;indirizzo e dalle caratteristiche principali. Il risultato
-                      è una fascia di valore spiegata con parole semplici, utile per decidere se vendere,
-                      affittare o tenere l&apos;immobile.
+                      Con Valuta Facile ottieni in pochi minuti una stima del valore del tuo immobile
+                      basata sui dati ufficiali OMI della tua zona, non su medie generiche. Inserisci
+                      l'indirizzo e qualche dettaglio sull'immobile: il risultato è una fascia di prezzo
+                      realistica, spiegata in modo chiaro, utile per decidere se vendere, affittare o
+                      tenere l'immobile.
                     </p>
                     <ul className="list-disc list-inside space-y-2">
                       <li>
                         {currentProvinceName
-                          ? `Stima pensata per immobili a ${currentProvinceName} e provincia.`
-                          : 'Stima pensata per immobili nella tua provincia.'}
+                          ? `Dati aggiornati sui prezzi al metro quadro a ${currentProvinceName}, zona per zona.`
+                          : 'Dati aggiornati sui prezzi al metro quadro nella tua zona.'}
                       </li>
-                      <li>Dati OMI e informazioni di zona integrati nel motore di valutazione.</li>
-                      <li>Nessun obbligo di parlare con un&apos;agenzia: decidi tu i passi successivi.</li>
+                      <li>Valori ufficiali dell'Osservatorio del Mercato Immobiliare (OMI), non stime a occhio.</li>
+                      <li>Nessun obbligo di parlare con un'agenzia: decidi tu i passi successivi.</li>
                     </ul>
                     <p>
                       Se vuoi, dopo la valutazione puoi richiedere un confronto con professionisti che
@@ -6198,8 +6398,8 @@ function App() {
                     <ol className="mt-3 space-y-3 text-sm text-gray-800 list-decimal list-inside">
                     <li>
                       {currentProvinceName
-                        ? `Inserisci l&apos;indirizzo del tuo immobile a ${currentProvinceName} o provincia.`
-                        : 'Inserisci l&apos;indirizzo del tuo immobile nella tua provincia.'}
+                        ? `Inserisci l'indirizzo del tuo immobile a ${currentProvinceName} o provincia.`
+                        : "Inserisci l'indirizzo del tuo immobile nella tua provincia."}
                     </li>
                       <li>Aggiungi pochi dettagli su metratura, stato e caratteristiche principali.</li>
                       <li>Ricevi subito una fascia di valore con spiegazioni chiare.</li>
@@ -6218,6 +6418,149 @@ function App() {
                     </p>
                   </div>
                 </div>
+
+                {provinceMarketDataLoading && (
+                  <div className="mt-10 text-sm text-gray-500">
+                    Carico i dati di mercato aggiornati{currentProvinceName ? ` per ${currentProvinceName}` : ''}...
+                  </div>
+                )}
+
+                {!provinceMarketDataLoading && provinceMarketData && (
+                  <div className="mt-10 rounded-3xl border-2 border-slate-900 bg-white px-5 py-6 sm:px-8 sm:py-8 shadow-[6px_6px_0_rgba(15,23,42,1)]">
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                        {currentProvinceName
+                          ? `Prezzi immobiliari a ${currentProvinceName}`
+                          : 'Prezzi immobiliari nella zona'}
+                      </h2>
+                      {provinceMarketData.referencePeriod && (
+                        <p className="text-xs text-gray-500">
+                          Aggiornato a {provinceMarketData.referencePeriod}
+                        </p>
+                      )}
+                    </div>
+
+                    {provinceMarketData.pricePerSqm && (
+                      <p className="mt-3 text-sm text-gray-700">
+                        Il prezzo medio degli immobili {currentProvinceName ? `a ${currentProvinceName}` : 'in zona'}{' '}
+                        è di <span className="font-semibold text-gray-900">{provinceMarketData.pricePerSqm.toLocaleString('it-IT')} €/m²</span>
+                        {provinceMarketData.priceRange && (
+                          <>
+                            {' '}(fascia tipica tra {provinceMarketData.priceRange.min.toLocaleString('it-IT')} €
+                            e {provinceMarketData.priceRange.max.toLocaleString('it-IT')} € al m²)
+                          </>
+                        )}.
+                      </p>
+                    )}
+
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                      {provinceMarketData.salePrices?.appartamenti && (
+                        <div className="rounded-2xl border border-gray-200 px-4 py-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                            Appartamenti in vendita
+                          </p>
+                          <p className="mt-1 text-2xl font-semibold text-gray-900">
+                            {provinceMarketData.salePrices.appartamenti.pricePerSqm?.toLocaleString('it-IT')} €/m²
+                          </p>
+                          <p className="mt-1 text-xs text-gray-600">
+                            Prezzo mediano di vendita:{' '}
+                            {provinceMarketData.salePrices.appartamenti.medianPrice?.toLocaleString('it-IT')} €
+                          </p>
+                          {typeof provinceMarketData.trend?.appartamenti?.oneYearPct === 'number' && (
+                            <p className="mt-2 text-xs font-semibold text-emerald-700">
+                              {provinceMarketData.trend.appartamenti.oneYearPct > 0 ? '+' : ''}
+                              {provinceMarketData.trend.appartamenti.oneYearPct}% negli ultimi 12 mesi
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {provinceMarketData.salePrices?.case && (
+                        <div className="rounded-2xl border border-gray-200 px-4 py-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-700">
+                            Case in vendita
+                          </p>
+                          <p className="mt-1 text-2xl font-semibold text-gray-900">
+                            {provinceMarketData.salePrices.case.pricePerSqm?.toLocaleString('it-IT')} €/m²
+                          </p>
+                          <p className="mt-1 text-xs text-gray-600">
+                            Prezzo mediano di vendita:{' '}
+                            {provinceMarketData.salePrices.case.medianPrice?.toLocaleString('it-IT')} €
+                          </p>
+                          {typeof provinceMarketData.trend?.case?.oneYearPct === 'number' && (
+                            <p className="mt-2 text-xs font-semibold text-emerald-700">
+                              {provinceMarketData.trend.case.oneYearPct > 0 ? '+' : ''}
+                              {provinceMarketData.trend.case.oneYearPct}% negli ultimi 12 mesi
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {(provinceMarketData.rentPrices?.appartamenti || provinceMarketData.rentPrices?.case) && (
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        {provinceMarketData.rentPrices?.appartamenti && (
+                          <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                              Affitto appartamenti
+                            </p>
+                            <p className="mt-1 text-sm text-gray-800">
+                              circa {provinceMarketData.rentPrices.appartamenti.medianRent?.toLocaleString('it-IT')} €/mese
+                            </p>
+                          </div>
+                        )}
+                        {provinceMarketData.rentPrices?.case && (
+                          <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                              Affitto case
+                            </p>
+                            <p className="mt-1 text-sm text-gray-800">
+                              circa {provinceMarketData.rentPrices.case.medianRent?.toLocaleString('it-IT')} €/mese
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <p className="mt-4 text-[11px] text-gray-400">
+                      Dati di mercato: RealAdvisor. Per una stima specifica del tuo immobile usa lo strumento
+                      di Valuta Facile qui sopra, basato su dati ufficiali OMI.
+                    </p>
+                  </div>
+                )}
+
+                {FEATURED_CITIES.filter((city) => city.slug !== currentProvinceSlug).length > 0 && (
+                  <div className="mt-8 rounded-3xl border border-gray-200 bg-white px-5 py-5 sm:px-6 sm:py-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                      Valutazione casa in altre città
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {FEATURED_CITIES.filter((city) => city.slug !== currentProvinceSlug).map((city) => (
+                        <a
+                          key={city.slug}
+                          href={`/valutazione-casa-${city.slug}`}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            setCurrentPage('province-landing')
+                            setCurrentProvinceSlug(city.slug)
+                            setCurrentBlogSlug(null)
+                            setWizardStep('landing_address')
+                            if (typeof window !== 'undefined') {
+                              try {
+                                window.history.pushState({}, '', `/valutazione-casa-${city.slug}`)
+                              } catch (e) {
+                                console.error('Errore aggiornamento URL valutazione-casa:', e)
+                              }
+                              window.scrollTo(0, 0)
+                            }
+                          }}
+                          className="inline-flex items-center rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-slate-900 hover:text-slate-900"
+                        >
+                          {city.name}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {adMode === 'banner' && (
                   <div className="mt-10">
@@ -6408,7 +6751,7 @@ function App() {
                       dateModified: currentBlogArticle.updatedAt,
                       mainEntityOfPage: {
                         '@type': 'WebPage',
-                        '@id': `https://www.valutafacile.it/blog/${currentBlogArticle.slug}`
+                        '@id': `https://valutafacile.it/blog/${currentBlogArticle.slug}`
                       }
                     })
                   }}
@@ -6858,6 +7201,24 @@ function WhyChooseVisual() {
   )
 }
 
+// Città con una pagina /valutazione-casa-:slug dedicata e collegata dal
+// blocco "altre città" più sotto. Lo slug deve combaciare con quello passato
+// a getMarketData nel backend (server/services/realAdvisorMarketData.js) e
+// con l'elenco CITY_SLUGS in scripts/prerender.mjs (tenuto in sync a mano,
+// stesso pattern già usato per FAQ_PAGE_ITEMS).
+const FEATURED_CITIES = [
+  { slug: 'pescara', name: 'Pescara' },
+  { slug: 'roma', name: 'Roma' },
+  { slug: 'milano', name: 'Milano' },
+  { slug: 'napoli', name: 'Napoli' },
+  { slug: 'torino', name: 'Torino' },
+  { slug: 'bologna', name: 'Bologna' },
+  { slug: 'firenze', name: 'Firenze' },
+  { slug: 'bari', name: 'Bari' },
+  { slug: 'chieti', name: 'Chieti' },
+  { slug: 'teramo', name: 'Teramo' }
+]
+
 const BLOG_ARTICLES_PLACEHOLDER = [
   {
     id: 1,
@@ -6871,9 +7232,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Scopri come leggere le stime, confrontare i dati di mercato e capire se il valore proposto per il tuo immobile è davvero in linea con la realtà.',
     publishedAt: '2024-01-15',
-    updatedAt: '2024-01-15',
+    updatedAt: '2026-09-06',
     body:
-      'Quando ricevi una valutazione per il tuo immobile è normale chiedersi se il numero proposto sia davvero attendibile. Una stima troppo alta rischia di rallentare la vendita, mentre una valutazione troppo bassa può farti perdere denaro senza motivo.\n\nPer capire se la valutazione è realistica è utile confrontare i dati con immobili simili nella stessa zona, verificare come sono stati considerati gli elementi di pregio e capire se il prezzo tiene conto del momento specifico del mercato. Uno strumento digitale come Valuta Facile ti aiuta a mettere ordine tra questi fattori e ad avere un primo orientamento chiaro, prima ancora di parlare con un agente.\n\nPrima di prendere decisioni definitive può essere utile raccogliere più di una valutazione e confrontarle, ricordando che ogni stima è sempre una fotografia del mercato in un determinato momento.',
+      'Una valutazione è realistica se rientra nella fascia di prezzo al metro quadro indicata dai dati ufficiali OMI (Osservatorio del Mercato Immobiliare, Agenzia delle Entrate) per la zona esatta dell’immobile, corretta poi in base a stato di conservazione, piano e caratteristiche specifiche. Se lo scostamento dalla media di zona supera il 15-20% senza una spiegazione precisa, è il primo segnale che qualcosa non torna.\n\nPer verificarlo in pratica confronta tre cose: il semestre OMI usato (i valori vengono aggiornati due volte l’anno, e una stima basata su dati vecchi di 2-3 anni non è più affidabile), il modo in cui sono stati considerati eventuali lavori o difetti dell’immobile, e se il numero proposto è un valore singolo o una fascia. Una valutazione seria dà sempre un intervallo minimo-massimo, non una cifra unica: una fascia stretta (differenza del 5-10% tra minimo e massimo) indica dati di zona solidi, una fascia molto larga (oltre il 25-30%) indica maggiore incertezza, non un errore.\n\nSe hai ricevuto due valutazioni diverse per lo stesso immobile, la differenza quasi sempre nasce da una di queste tre cose: dati di mercato di periodi diversi, un diverso peso dato allo stato dell’immobile, oppure una definizione diversa di "zona" (una via specifica rispetto a una media dell’intero comune). Chiedere di vedere queste ipotesi è il modo più veloce per capire quale stima fidarsi di più.\n\nUna buona pratica è aggiornare la valutazione ogni 6-12 mesi, o subito dopo un cambiamento rilevante nella zona (nuove infrastrutture, variazioni significative di prezzo nelle vendite comparabili) o nell’immobile stesso (ristrutturazioni, cambio di classe energetica).',
     keyPoints: [
       'Confronta sempre la stima con immobili simili nella stessa zona.',
       'Verifica come sono stati considerati elementi di pregio e lavori recenti.',
@@ -6903,9 +7264,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Uno sguardo semplice ma concreto ai movimenti recenti del mercato immobiliare italiano e a cosa significano per chi vuole vendere o comprare casa.',
     publishedAt: '2024-01-22',
-    updatedAt: '2024-01-22',
+    updatedAt: '2026-09-06',
     body:
-      'Negli ultimi anni il mercato immobiliare italiano ha vissuto fasi molto diverse tra loro. Dopo un periodo di forte entusiasmo, in alcune zone i prezzi hanno iniziato a stabilizzarsi, mentre in altre realtà continuano a crescere spinti dalla domanda.\n\nPer chi deve vendere o comprare casa è importante capire che non esiste un “trend unico” valido per tutto il Paese: città, province e perfino quartieri possono muoversi in modo diverso. Guardare ai dati del tuo territorio e usare uno strumento di valutazione aggiornato ti permette di avere un riferimento più aderente alla realtà, evitando decisioni basate solo su percezioni generiche.\n\nAnche i tempi medi di vendita sono un indicatore prezioso: ti aiutano a capire se la tua aspettativa sul prezzo è in linea con quanto il mercato è disposto ad assorbire in questo momento.',
+      'Non esiste un’unica tendenza nazionale dei prezzi delle case: alcune città e zone turistiche o ad alta domanda continuano a crescere, mentre altre realtà si sono stabilizzate o mostrano prezzi in leggero calo. La variabile che conta davvero per orientarti non è il titolo di giornale, ma il prezzo al metro quadro OMI aggiornato al semestre più recente per il tuo comune e la tua zona specifica.\n\nQuesto succede perché il mercato immobiliare italiano è fatto di tanti mercati locali che rispondono a fattori diversi: disponibilità di lavoro nella zona, nuove infrastrutture, pressione turistica, tasso di invecchiamento della popolazione locale. Due comuni a 20 km di distanza possono avere andamenti opposti nello stesso anno, quindi un dato nazionale o regionale serve solo come contesto generale, non come riferimento per il prezzo del tuo immobile.\n\nOltre al prezzo, guarda anche ai tempi medi di vendita nella tua zona: se sul mercato locale un immobile simile al tuo impiega tipicamente 3-4 mesi per vendersi e la tua aspettativa di prezzo implica tempi doppi o tripli, è un segnale che il prezzo richiesto è probabilmente troppo alto rispetto a quanto il mercato è disposto ad assorbire ora.\n\nSe stai per vendere o comprare, usa sempre i dati aggiornati al semestre più recente: valori di oltre un anno fa possono già essere superati, soprattutto in zone dove il mercato si sta muovendo rapidamente in una direzione o nell’altra.',
     keyPoints: [
       'Non esiste un unico mercato immobiliare: ogni zona ha dinamiche proprie.',
       'Prezzi e tempi di vendita vanno letti insieme per capire la domanda reale.',
@@ -6930,9 +7291,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Scopri gli errori più comuni che fanno sembrare un immobile meno interessante agli occhi di chi lo visita e come evitarli.',
     publishedAt: '2024-01-29',
-    updatedAt: '2024-01-29',
+    updatedAt: '2026-09-06',
     body:
-      'Quando un potenziale acquirente entra in casa sua prima impressione pesa tantissimo. Alcuni errori apparentemente piccoli possono far percepire l’immobile come trascurato o poco curato, abbassando immediatamente il valore nella mente di chi visita.\n\nTra i più frequenti ci sono annunci confusi o incompleti, ambienti troppo personali che rendono difficile immaginarsi dentro la casa e piccoli difetti visibili che danno l’idea di lavori più grandi del necessario. Con qualche accortezza mirata puoi evitare questi ostacoli e accompagnare meglio chi visita verso una percezione coerente con il vero potenziale del tuo immobile.\n\nInvestire un po’ di tempo nella preparazione degli spazi prima delle visite è spesso più efficace che ragionare subito su sconti importanti sul prezzo richiesto.',
+      'I tre errori che abbassano più velocemente il valore percepito di una casa sono: un annuncio incompleto (meno di 8-10 foto, planimetria o metratura mancante), ambienti troppo personalizzati che impediscono a chi visita di immaginarsi nella casa, e piccoli difetti visibili (infissi datati, crepe da assestamento, macchie di umidità) che fanno pensare a lavori molto più grandi e costosi di quelli reali.\n\nL’annuncio incompleto è il primo filtro: un annuncio con poche foto scure o senza planimetria riceve tipicamente molte meno richieste di visita, perché chi cerca casa oggi scarta rapidamente gli annunci poco chiari prima ancora di contattare l’agenzia. Foto luminose, planimetria aggiornata e metratura precisa (verificabile in visura) sono il minimo per non perdere contatti già in questa fase.\n\nGli ambienti troppo personali - foto di famiglia ovunque, arredi molto specifici, colori molto marcati - rendono più difficile per chi visita proiettarsi nella casa come sua. Non serve svuotare tutto: basta ridurre gli oggetti personali nelle stanze principali (soggiorno, camera da letto, ingresso) durante il periodo delle visite.\n\nI piccoli difetti visibili sono ingannevoli: una crepa da assestamento o un infisso vecchio, che magari costano poche centinaia di euro da sistemare, nella mente di chi visita si trasformano facilmente in "quanti altri problemi nascosti avrà questa casa?" - un dubbio che pesa sulla trattativa più del costo reale della riparazione. Sistemare questi dettagli prima delle visite è spesso più efficace, ed economico, di uno sconto sul prezzo richiesto.',
     keyPoints: [
       'Annunci confusi o incompleti abbassano le aspettative ancora prima della visita.',
       'Troppi oggetti personali rendono difficile immaginarsi dentro la casa.',
@@ -6958,9 +7319,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Dal primo sguardo all’ingresso fino alla luce in soggiorno: ecco cosa colpisce davvero chi entra in un immobile in vendita.',
     publishedAt: '2024-02-05',
-    updatedAt: '2024-02-05',
+    updatedAt: '2026-09-06',
     body:
-      'Durante una visita le persone non guardano solo i metri quadri o il numero di stanze. Cercano soprattutto sensazioni: ordine, luminosità, praticità degli spazi e una disposizione che permetta di immaginare subito come vivranno la casa.\n\nCapire queste aspettative ti aiuta a preparare meglio gli ambienti e a valorizzare i punti di forza del tuo immobile. Dettagli come l’odore, la temperatura e l’illuminazione possono sembrare secondari, ma spesso fanno la differenza tra una visita neutra e una visita che lascia un ricordo positivo.',
+      'Durante una visita le persone giudicano una casa in gran parte nei primi 30-60 secondi, e lo fanno più sulle sensazioni - ordine, luce, odore, temperatura - che sui numeri tecnici come metri quadri o numero di stanze, che di solito hanno già valutato leggendo l’annuncio prima di prenotare la visita.\n\nI tre elementi che pesano di più sono: la luminosità naturale (una stanza luminosa viene percepita come più grande e più curata anche a parità di metratura reale), l’ordine e l’assenza di ingombri (un corridoio libero o un piano cucina sgombro comunicano "casa pronta da vivere" molto più di qualsiasi descrizione nell’annuncio), e la disposizione degli spazi (poter immaginare dove mettere il proprio divano o il proprio letto conta più della forma esatta della stanza).\n\nDettagli apparentemente minori come l’odore (arieggiare prima delle visite, evitare odori di cucina o di animali) e la temperatura (una casa troppo fredda in inverno o soffocante in estate lascia un ricordo negativo indipendentemente da come è arredata) fanno spesso la differenza tra una visita che lascia indifferenti e una che genera una proposta concreta nei giorni successivi.\n\nNon serve arredare la casa da zero: basta lavorare su questi punti specifici prima di ogni visita, con un investimento di tempo minimo rispetto al beneficio sulla percezione di valore.',
     keyPoints: [
       'Le persone reagiscono prima alle sensazioni che ai numeri.',
       'Luce, ordine e disposizione degli ambienti guidano la percezione di valore.',
@@ -6986,9 +7347,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Una lista ragionata di interventi leggeri ma efficaci per presentare meglio il tuo immobile e sostenerne il valore in fase di trattativa.',
     publishedAt: '2024-02-12',
-    updatedAt: '2024-02-12',
+    updatedAt: '2026-09-06',
     body:
-      'Non è sempre necessario affrontare grandi ristrutturazioni per rendere più appetibile un immobile. Spesso bastano interventi mirati: una tinteggiatura fresca, qualche punto luce in più o la sistemazione di dettagli usurati.\n\nQuesti piccoli lavori aiutano a dare un’impressione di cura generale e riducono la sensazione di “cose da fare” che molti acquirenti percepiscono come costi extra. Valutare quali interventi hanno il miglior rapporto tra investimento e beneficio è un ottimo modo per prepararsi alla vendita in modo intelligente.',
+      'I lavori con il miglior rapporto tra costo e aumento del valore percepito, prima di vendere, sono di solito: tinteggiatura delle pareti (indicativamente 5-15 €/mq, a seconda della zona e dell’impresa), sostituzione di dettagli usurati come maniglie, prese e placche (pochi euro a pezzo, ma visibili subito), e un miglioramento dell’illuminazione con punti luce o lampadine a LED più performanti. Non serve una ristrutturazione completa per ottenere un salto percepito importante.\n\nQuesti interventi funzionano perché riducono la sensazione di "lavori da fare" che l’acquirente mette mentalmente in conto come sconto sul prezzo: una parete scrostata o un infisso datato, anche se costano poco da sistemare, vengono spesso sovrastimati da chi visita, che tende a immaginare un costo di riparazione superiore a quello reale.\n\nPrima di decidere se fare lavori più impegnativi (bagno, cucina, impianti), conviene chiedersi se il costo verrà recuperato nel prezzo di vendita: in generale una ristrutturazione parziale mirata (es. solo il bagno) ha un ritorno migliore di un rifacimento completo, soprattutto se l’immobile è già in una fascia di prezzo competitiva per la zona.\n\nSe il budget è limitato, l’ordine di priorità più efficace è: pulizia profonda e tinteggiatura, sistemazione dei piccoli difetti visibili (crepe, infissi, prese), poi solo se il budget lo consente interventi più strutturali come impianti o pavimenti.',
     keyPoints: [
       'Interventi leggeri possono migliorare molto la percezione dell’immobile.',
       'Lavori mirati riducono la sensazione di spese future per chi compra.',
@@ -7014,9 +7375,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Capire come i movimenti dei tassi dei mutui incidono sulla capacità di spesa degli acquirenti e quindi sul valore di mercato degli immobili.',
     publishedAt: '2024-02-19',
-    updatedAt: '2024-02-19',
+    updatedAt: '2026-09-06',
     body:
-      'Quando i tassi dei mutui salgono, per molte famiglie diventa più difficile ottenere il finanziamento necessario o sostenere una rata elevata. Questo si riflette direttamente sul mercato: cala la platea di potenziali acquirenti e in alcune zone i prezzi tendono a stabilizzarsi o ad essere più negoziabili.\n\nAl contrario, tassi più bassi rendono l’acquisto accessibile a più persone e possono sostenere i valori di vendita. Sapere in che fase ci si trova aiuta a leggere meglio le offerte ricevute e a impostare aspettative realistiche sul prezzo finale.',
+      'Quando il tasso di un mutuo sale, la rata mensile aumenta più di quanto sembri: su un mutuo trentennale di 200.000 €, passare da un tasso fisso del 3% al 4% fa salire la rata di circa 110 € al mese (da circa 843 € a circa 955 €), circa 55 € al mese ogni 100.000 € finanziati. Questo calcolo è puramente illustrativo (la rata reale dipende da importo, durata e condizioni specifiche del mutuo) ma rende l’idea di perché i tassi contano così tanto per il mercato immobiliare.\n\nQuando la rata sale, molte famiglie si avvicinano al limite di sostenibilità stabilito dalle banche (in genere la rata non dovrebbe superare un terzo del reddito netto), quindi si riducono sia il numero di famiglie che possono ottenere il mutuo, sia l’importo massimo che possono permettersi. Il risultato è una platea di acquirenti più piccola e più selettiva, il che spinge alcuni venditori a rendersi più disponibili a negoziare sul prezzo.\n\nQuando i tassi scendono, succede l’opposto: la stessa rata mensile permette di finanziare un importo più alto, più famiglie tornano nella fascia di acquirenti solvibili, e questo tende a sostenere o far salire i prezzi, soprattutto nelle fasce di prezzo più sensibili al mutuo (prima casa, tagli medio-piccoli).\n\nSe stai vendendo in un periodo di tassi alti, una valutazione realistica e aggiornata ti aiuta a fissare un prezzo che tenga conto di questa platea più selettiva, invece di basarti su offerte ricevute mesi prima in condizioni di mercato diverse.',
     keyPoints: [
       'Tassi più alti riducono il numero di acquirenti potenziali.',
       'Quando i tassi scendono è più facile sostenere una rata e comprare casa.',
@@ -7042,9 +7403,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Un confronto ragionato tra vendita e affitto per aiutarti a scegliere la strada più adatta alle tue esigenze e al contesto di mercato.',
     publishedAt: '2024-02-26',
-    updatedAt: '2024-02-26',
+    updatedAt: '2026-09-06',
     body:
-      'Decidere se vendere subito o mettere a reddito un immobile è una scelta che intreccia numeri, tempi e aspettative personali. La risposta giusta non è uguale per tutti: dipende dalla tua situazione economica, dal tipo di immobile e dal contesto di mercato locale.\n\nAnalizzare il rendimento potenziale dell’affitto, i costi di gestione e la prospettiva di rivalutazione nel tempo ti permette di valutare in modo più lucido le opzioni. Una buona valutazione iniziale è il punto di partenza per simulare scenari diversi e capire quale direzione è più sostenibile per te.',
+      'In Italia il rendimento lordo da affitto (canone annuo diviso valore dell’immobile) si colloca tipicamente tra il 3% e il 6% a seconda della città e della zona, contro un investimento in liquidità o in altri strumenti che va confrontato al netto di tasse (cedolare secca 21% o 10% per canone concordato) e costi di gestione (manutenzione, eventuali sfitti, amministratore). Se il rendimento netto stimato è vicino o inferiore a quello di alternative a basso rischio, la vendita diventa spesso più conveniente della rendita.\n\nOltre al rendimento va considerato il tempo: mettere a reddito richiede gestione continuativa (ricerca inquilino, manutenzione, eventuali contenziosi), mentre vendere libera capitale subito ma chiude la possibilità di beneficiare di una futura rivalutazione dell’immobile. Chi ha bisogno di liquidità a breve termine, o non vuole occuparsi di gestione, tende a orientarsi verso la vendita anche con un rendimento da affitto teoricamente interessante.\n\nUn modo pratico per decidere è simulare entrambi gli scenari con numeri reali: prezzo di vendita realistico (basato su una valutazione aggiornata) da un lato, canone di affitto atteso meno costi e tasse dall’altro, proiettato su un orizzonte di 5-10 anni includendo un’ipotesi prudente di rivalutazione o svalutazione dell’immobile.\n\nNon esiste una risposta valida per tutti: dipende dal tuo bisogno di liquidità, dalla tua disponibilità a gestire un affitto nel tempo e dalle prospettive specifiche della zona in cui si trova l’immobile.',
     keyPoints: [
       'Vendita e affitto rispondono a bisogni diversi e tempi diversi.',
       'È utile confrontare rendimento da affitto e prezzo di vendita realistico.',
@@ -7070,9 +7431,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Una panoramica essenziale dei documenti chiave da avere pronti quando decidi di vendere il tuo immobile, senza tecnicismi inutili.',
     publishedAt: '2024-03-04',
-    updatedAt: '2024-03-04',
+    updatedAt: '2026-09-06',
     body:
-      'Una delle fonti di stress più frequenti nelle compravendite immobiliari è la gestione dei documenti. Arrivare alle fasi finali con carte mancanti o poco chiare può rallentare tutto e far perdere fiducia alla controparte.\n\nPreparare in anticipo visura, planimetrie aggiornate, attestato di prestazione energetica e documenti relativi a eventuali lavori ti permette di affrontare la vendita con maggiore serenità. Sapere esattamente cosa serve ti aiuta anche a scegliere professionisti e consulenti in modo più consapevole.',
+      'I documenti essenziali per vendere casa senza intoppi sono cinque: visura catastale aggiornata, planimetria catastale conforme allo stato di fatto dell’immobile, atto di provenienza (rogito, successione o donazione), attestato di prestazione energetica (APE, obbligatorio per legge fin dalla pubblicazione dell’annuncio) e, se l’immobile è in condominio, il regolamento condominiale insieme all’ultimo verbale di assemblea.\n\nLa planimetria conforme è quella che crea più problemi in fase finale: se negli anni sono stati fatti lavori (spostamento di una parete, chiusura di un balcone, cambio di destinazione d’uso di una stanza) senza aggiornare gli atti catastali, la difformità va sanata prima del rogito, con tempi che possono richiedere alcune settimane. Verificarla in anticipo evita di scoprirlo a trattativa già avviata.\n\nL’attestato di prestazione energetica ha una validità di 10 anni e va rifatto se sono stati eseguiti interventi che cambiano la classe energetica dell’immobile (es. sostituzione infissi, caldaia, isolamento). È obbligatorio indicarne la classe già nell’annuncio, quindi va richiesto prima di pubblicare, non solo prima del rogito.\n\nAvere questi documenti pronti prima ancora di ricevere la prima offerta accorcia i tempi tra proposta e rogito e comunica alla controparte un livello di serietà che spesso facilita anche la trattativa sul prezzo.',
     keyPoints: [
       'Documenti incompleti sono una delle prime cause di ritardi nelle vendite.',
       'Preparare in anticipo la documentazione riduce stress e imprevisti.',
@@ -7098,9 +7459,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Piccoli accorgimenti quotidiani per rendere la tua casa più accogliente agli occhi di chi la visita, senza trasformare tutto in un lavoro a tempo pieno.',
     publishedAt: '2024-03-11',
-    updatedAt: '2024-03-11',
+    updatedAt: '2026-09-06',
     body:
-      'Tenere una casa “da visita” tutti i giorni può sembrare impossibile, soprattutto se vivi l’immobile che stai vendendo. In realtà spesso bastano abitudini semplici per mantenere gli ambienti sempre presentabili quando arriva una richiesta dell’agenzia.\n\nOrganizzare alcune zone di appoggio, ridurre il superfluo e avere una piccola routine pre-visita ti aiuta a gestire meglio questi momenti senza stress. In questo modo chi entra percepisce ordine e cura, anche se la tua vita quotidiana continua normalmente.',
+      'Per gestire le visite senza vivere in una casa "da fotografia" tutti i giorni, la soluzione più efficace è una routine di 10-15 minuti da fare solo prima di ogni visita confermata, non una perfezione costante: sistemare le zone che l’acquirente vede per prime (ingresso, soggiorno, cucina), aprire le tapparelle per la luce naturale e arieggiare gli ambienti.\n\nOrganizzare in anticipo 1-2 "zone di appoggio" (un cesto, un armadio, una stanza meno visitata) dove spostare velocemente oggetti in vista - vestiti, giocattoli, posta - rende questa routine gestibile anche con preavviso breve, ed evita l’effetto "casa messa a soqquadro" che si nota subito.\n\nLe stanze che pesano di più sulla prima impressione sono ingresso, soggiorno e cucina: se il tempo è poco, concentra lo sforzo lì piuttosto che distribuirlo su tutta la casa. Camere da letto e bagni secondari possono restare a un livello di ordine "normale", purché puliti.\n\nQuesta routine funziona meglio se concordata con l’agenzia: chiedere un preavviso minimo di qualche ora per le visite ti permette di applicarla senza stress, mantenendo comunque la casa vivibile nella quotidianità.',
     keyPoints: [
       'Piccole abitudini quotidiane rendono più gestibili le visite improvvise.',
       'Ridurre il superfluo aiuta a mantenere la casa più ordinata e accogliente.',
@@ -7126,9 +7487,9 @@ const BLOG_ARTICLES_PLACEHOLDER = [
     seoDescription:
       'Capire il peso della prima impressione nelle decisioni di acquisto ti aiuta a usare meglio il prezzo come leva di trattativa.',
     publishedAt: '2024-03-18',
-    updatedAt: '2024-03-18',
+    updatedAt: '2026-09-06',
     body:
-      'Molti venditori pensano che per rendere un immobile più interessante basti abbassare il prezzo. In realtà, soprattutto nelle prime settimane sul mercato, la percezione gioca un ruolo decisivo: una casa presentata bene genera più richieste, più visite e spesso offerte migliori.\n\nCurare foto, annuncio e preparazione degli spazi può valere più di uno sconto deciso in fretta. Il prezzo resta importante, ma funziona al meglio quando è supportato da una comunicazione e da una presentazione coerenti con il valore reale dell’immobile.',
+      'Le prime 2-3 settimane di pubblicazione di un annuncio sono statisticamente le più importanti: è il periodo in cui l’immobile riceve più visualizzazioni e più richieste di visita, perché intercetta tutti gli acquirenti già attivi nella ricerca. Un annuncio con foto scure o poche informazioni brucia questa finestra, e recuperarla dopo (con foto migliori pubblicate in un secondo momento) non genera lo stesso numero di contatti iniziali.\n\nPer questo motivo curare foto, planimetria, descrizione e preparazione degli spazi prima ancora di pubblicare l’annuncio ha spesso un impatto maggiore sul risultato finale di uno sconto sul prezzo deciso in fretta dopo le prime settimane senza riscontri. Un prezzo leggermente più alto ma un annuncio ben presentato genera più richieste di visita di un prezzo scontato ma con un annuncio poco curato.\n\nQuesto non significa che il prezzo non conti: significa che prezzo e presentazione lavorano insieme. Un prezzo coerente con i dati di zona, comunicato attraverso un annuncio curato, arriva a un numero di acquirenti potenziali più ampio e con aspettative più allineate, il che riduce anche il tempo delle trattative.\n\nSe dopo 4-6 settimane di pubblicazione curata le richieste restano poche, allora il problema è più probabilmente il prezzo che la presentazione: a quel punto conviene rivedere la valutazione con dati aggiornati, prima di continuare ad aspettare.',
     keyPoints: [
       'La prima impressione può valere più di uno sconto sul prezzo.',
       'Presentare bene casa aumenta richieste e qualità delle visite.',
@@ -7141,6 +7502,52 @@ const BLOG_ARTICLES_PLACEHOLDER = [
           'Spesso è più efficace migliorare prima presentazione, annuncio e foto. Una casa curata genera più interesse e ti permette di usare il prezzo con maggiore consapevolezza nella trattativa.'
       }
     ]
+  }
+]
+
+// Testo delle FAQ della pagina /domande-frequenti, tenuto in sync a mano con
+// l'accordion JSX più sotto (currentPage === 'faq'): usato solo per generare
+// lo schema.org FAQPage, non per il rendering visivo (che resta invariato).
+const FAQ_PAGE_ITEMS = [
+  {
+    question: 'La valutazione è davvero gratuita?',
+    answer:
+      "Sì. Utilizzare Valuta Facile per ottenere una stima non ha costi e non comporta obblighi di affidarti a un'agenzia o a un professionista."
+  },
+  {
+    question: 'Cosa succede dopo che ho ricevuto la valutazione?',
+    answer:
+      'Puoi semplicemente tenerla per te, usarla come riferimento oppure chiederci supporto per capire come valorizzare al meglio il tuo immobile. Nessun passaggio è automatico o imposto.'
+  },
+  {
+    question: 'Devo lasciare per forza il mio numero di telefono?',
+    answer:
+      'No. Puoi decidere quali recapiti indicarci e come preferisci essere ricontattato. Se non vuoi telefonate, lo rispettiamo.'
+  },
+  {
+    question: 'La stima è uguale a quella di un perito o di un agente?',
+    answer:
+      'La nostra è una valutazione online, pensata come base di partenza. È molto utile per orientarti e può essere poi approfondita insieme a un professionista, se lo desideri.'
+  },
+  {
+    question: 'Quanto è precisa la valutazione rispetto al mercato attuale?',
+    answer:
+      'Usiamo dati ufficiali e analisi aggiornate per costruire una fascia di valore realistica. La stima non sostituisce una perizia, ma ti dà un riferimento affidabile per orientare le tue scelte.'
+  },
+  {
+    question: 'Posso usare Valuta Facile anche se sto solo pensando di vendere?',
+    answer:
+      "Certo. Molte persone usano la valutazione per farsi un'idea del valore prima di prendere qualsiasi decisione. Non ci sono vincoli né obblighi di mettere in vendita l'immobile."
+  },
+  {
+    question: 'Come vengono utilizzati i miei dati?',
+    answer:
+      'I dati che inserisci servono solo per calcolare la valutazione o rispondere alle tue richieste di contatto/assistenza. Non vendiamo i tuoi dati a terzi e non li usiamo per campagne massicce di marketing.'
+  },
+  {
+    question: 'Posso chiedere la cancellazione dei miei dati?',
+    answer:
+      "Sì. In qualsiasi momento puoi scriverci dal Centro assistenza per chiedere la cancellazione o l'aggiornamento dei tuoi dati. Ti daremo riscontro nel minor tempo possibile, nel rispetto della normativa privacy."
   }
 ]
 
@@ -7379,13 +7786,13 @@ function MainFooter({
                 />
               </div>
               <p className="mt-4 text-sm text-gray-800 max-w-md text-center md:text-left">
-                Valuta Facile S.r.l. – Piattaforma per la valutazione immobiliare semplice e guidata.
+                Valuta Facile è un marchio di Marconi 138 S.r.l. – Piattaforma per la valutazione immobiliare semplice e guidata.
               </p>
               <p className="mt-2 text-xs text-gray-600 text-center md:text-left">
-                Via Esempio 123, 00100 Roma (RM) · P.IVA 01234567890
+                Via F. Ferdinando D'Avalos 66, 65126 Pescara (PE) · P.IVA 02227840689
               </p>
               <p className="mt-1 text-xs text-gray-600 text-center md:text-left">
-                Email: info@valutafacile.it · Tel: +39 06 0000 0000
+                Email: info@valutafacile.it
               </p>
             </div>
 

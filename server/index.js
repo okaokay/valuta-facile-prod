@@ -15,6 +15,7 @@ import { OmiOfficialRepository } from './services/OmiOfficialRepository.js'
 import { registerValuationEngine } from './services/valuationEngineRegistry.js'
 import { mapUiCategoryToOmi } from './services/omiCategoryMapping.js'
 import { searchAddressesServerSide, reverseGeocodeServerSide } from './services/geocodeSearch.js'
+import { getMarketData } from './services/realAdvisorMarketData.js'
 import { authenticator } from 'otplib'
 import {
   insertLead,
@@ -1457,6 +1458,27 @@ app.get('/api/geocode/reverse', async (req, res) => {
   } catch (e) {
     console.error('[geocode/reverse] Errore:', e)
     return res.status(500).json({ address: null, error: 'geocode_reverse_failed' })
+  }
+})
+
+// Dati di mercato per le pagine città pubbliche (/valutazione-casa-:slug):
+// riusa lo stesso servizio/cache già collegato ai report a pagamento
+// (server/services/realAdvisorMarketData.js), qui a livello di solo comune
+// (nessun cap/via) così basta lo slug della pagina per identificare la città.
+app.get('/api/mercato/:slug', async (req, res) => {
+  const slug = String(req.params.slug || '').trim().toLowerCase()
+  if (!slug) {
+    return res.status(400).json({ error: 'missing_slug' })
+  }
+  try {
+    const market = await getMarketData({ comune: slug })
+    if (!market) {
+      return res.status(404).json({ error: 'not_found' })
+    }
+    return res.json({ market })
+  } catch (e) {
+    console.error('[mercato] Errore:', e)
+    return res.status(500).json({ error: 'server_error' })
   }
 })
 

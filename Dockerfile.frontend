@@ -1,5 +1,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
+# Chromium di sistema per il prerendering (script/prerender.mjs, Playwright):
+# il Chromium "bundle" scaricato normalmente da Playwright non è compatibile
+# con la musl libc di Alpine, quindi usiamo quello di apk e lo puntiamo via
+# PRERENDER_CHROMIUM_PATH invece di scaricare i browser di Playwright.
+RUN apk add --no-cache chromium nss freetype freetype-dev harfbuzz ca-certificates ttf-freefont
+ENV PRERENDER_CHROMIUM_PATH=/usr/bin/chromium-browser
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY vite.config.js ./
@@ -9,13 +15,18 @@ COPY gi_db_comuni-2026-01-31-6fcd8 ./gi_db_comuni-2026-01-31-6fcd8
 COPY index.html ./
 COPY public ./public
 COPY src ./src
+COPY scripts ./scripts
 ARG VITE_API_BASE_URL
 ARG VITE_USE_MOCKS
 ARG VITE_GROQ_API_KEY
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_USE_MOCKS=$VITE_USE_MOCKS
 ENV VITE_GROQ_API_KEY=$VITE_GROQ_API_KEY
-RUN npm run build
+# Se il prerendering fallisce (es. Chromium non disponibile in un ambiente di
+# build particolare) la build non deve bloccarsi: meglio pubblicare la SPA
+# senza prerender che non pubblicare nulla. "|| echo" registra l'accaduto nei
+# log di build senza interrompere il resto del Dockerfile.
+RUN npm run build:prerender || (echo "[prerender] Prerendering fallito, proseguo con la sola build client-side" && npm run build)
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
