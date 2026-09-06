@@ -132,11 +132,11 @@ function LeadQualificationWizard({
               <div className="text-sm font-semibold text-slate-900">
                 Richiedi come
               </div>
-              <div className="inline-flex flex-wrap rounded-full border-2 border-slate-900 bg-white overflow-hidden text-xs sm:text-sm font-semibold">
+              <div className="flex flex-col sm:inline-flex sm:flex-row w-full sm:w-auto rounded-2xl sm:rounded-full border-2 border-slate-900 bg-white overflow-hidden text-xs sm:text-sm font-semibold divide-y-2 sm:divide-y-0 sm:divide-x-2 divide-slate-900">
                 <button
                   type="button"
                   onClick={() => setLeadField('profileType', 'PROPRIETARIO')}
-                  className={`px-4 sm:px-5 h-9 ${
+                  className={`px-4 sm:px-5 h-11 sm:h-9 ${
                     wizardData.lead.profileType === 'PROPRIETARIO'
                       ? 'bg-slate-900 text-white'
                       : 'bg-white text-slate-900'
@@ -147,7 +147,7 @@ function LeadQualificationWizard({
                 <button
                   type="button"
                   onClick={() => setLeadField('profileType', 'CLIENTE_ACQUIRENTE')}
-                  className={`px-4 sm:px-5 h-9 border-l-2 border-slate-900 ${
+                  className={`px-4 sm:px-5 h-11 sm:h-9 ${
                     wizardData.lead.profileType === 'CLIENTE_ACQUIRENTE'
                       ? 'bg-slate-900 text-white'
                       : 'bg-white text-slate-900'
@@ -158,7 +158,7 @@ function LeadQualificationWizard({
                 <button
                   type="button"
                   onClick={() => setLeadField('profileType', 'PROFESSIONISTA')}
-                  className={`px-4 sm:px-5 h-9 border-l-2 border-slate-900 ${
+                  className={`px-4 sm:px-5 h-11 sm:h-9 ${
                     wizardData.lead.profileType === 'PROFESSIONISTA'
                       ? 'bg-slate-900 text-white'
                       : 'bg-white text-slate-900'

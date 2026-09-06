@@ -6429,27 +6429,6 @@ function App() {
         onOpenCookieSettings={handleOpenCookieSettings}
       />
 
-      {currentPage !== 'test_home' && (
-        <button
-          type="button"
-          onClick={() => {
-            setCurrentPage('pre')
-            setWizardStep('landing_address')
-            if (typeof window !== 'undefined') {
-              try {
-                window.history.pushState({}, '', '/pre')
-          } catch (e) {
-            console.error('Errore aggiornamento URL /pre:', e)
-          }
-              window.scrollTo(0, 0)
-            }
-          }}
-          className="fixed bottom-4 right-4 rounded-full bg-slate-900/90 text-white text-xs px-4 py-2 shadow-lg hover:bg-slate-800"
-        >
-          Prototipo nuova home
-        </button>
-      )}
-      
       <ContactFormPopup
         isOpen={isLeadModalOpen}
         onClose={() => setIsLeadModalOpen(false)}
