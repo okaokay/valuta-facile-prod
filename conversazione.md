@@ -491,4 +491,4 @@ Ho però bisogno del file originale in chat. Al momento vedo solo un riferimento
 Carica nuovamente il file Simboli e forme-13.svg (trascinandolo qui nella conversazione) e ti restituisco direttamente:
 
 il nuovo SVG animabile;
-il codice completo da incollare nel widget HTML di Elementor, già integrato con GSAP.
+il codice completo da incollare nel widget HTML di Elementor, già integrato con GSAP. 

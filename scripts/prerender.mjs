@@ -165,6 +165,16 @@ async function main() {
   try {
     for (const route of ROUTES) {
       const page = await browser.newPage()
+      // Il sito carica Google tag (gtag.js) da index.html: senza questo
+      // blocco, ogni pagina prerenderizzata durante la build invierebbe un
+      // pageview reale a Google Analytics per ogni build, inquinando i dati
+      // con visite fittizie dalla macchina di build invece che da utenti
+      // veri. Blocchiamo qui la richiesta di rete, non lato App (più
+      // affidabile: funziona anche se in futuro si aggiungono altri script
+      // di tracking in index.html).
+      await page.route(/googletagmanager\.com|google-analytics\.com|analytics\.google\.com/, (route2) =>
+        route2.abort()
+      )
       try {
         await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle', timeout: 30000 })
         // Margine extra per gli useEffect che aggiornano title/meta/JSON-LD
