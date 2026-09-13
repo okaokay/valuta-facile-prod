@@ -713,7 +713,7 @@ const ENERGY_CLASS_UNKNOWN_VALUE = 'NON_SO'
 // dei centri storici/zone di pregio, dove questo ragionamento non vale.
 const CONSTRUCTION_YEAR_BANDS = [
   { maxYear: 1969, multiplier: -0.2 },
-  { minYear: 1970, maxYear: 1999, multiplier: -0.18 },
+  { minYear: 1970, maxYear: 1999, multiplier: -0.1 },
   { minYear: 2000, maxYear: 2004, multiplier: 0.05 },
   { minYear: 2005, maxYear: 2014, multiplier: 0.15 },
   { minYear: 2015, maxYear: 2019, multiplier: 0.18 },
@@ -972,17 +972,9 @@ async function buildCapBasedValuation(address, property, options = {}) {
     ? 1 + ZONA_DI_PREGIO_MAX_BONUS_MULTIPLIER
     : totalPriceMultiplierBeforeCap
 
-  // Garage/posto auto: valutazione SEPARATA basata sui valori OMI della
-  // tipologia "Box" — non viene aggiunta al prezzo dell'abitazione. Può avere
-  // un indirizzo proprio (garageAddress), diverso da quello dell'abitazione.
+  // Garage/posto auto: solo segnalato come caratteristica, non valutato
+  // economicamente (vedi blocco più sotto) — "dati non pervenuti".
   const hasGarage = !!property?.hasGarage
-  const garageArea = Number(property?.garageArea) || 0
-  const garageAddressRaw = property?.garageAddress || null
-  const garageCap = (
-    garageAddressRaw?.postcode ||
-    garageAddressRaw?.cap ||
-    ''
-  ).toString().trim()
   let valutazioneGarage = null
 
   let omiData = null
@@ -1281,73 +1273,16 @@ async function buildCapBasedValuation(address, property, options = {}) {
     }
   }
 
-  // Valutazione separata del garage/posto auto (OMI tipologia "Box").
-  // Indipendente dall'esito della valutazione principale qui sopra: usa
-  // l'indirizzo proprio del garage se fornito (può essere diverso da quello
-  // dell'abitazione), altrimenti assume la stessa località dell'abitazione.
-  if (hasGarage && garageArea > 0 && omiOfficialRepo) {
-    try {
-      let garageComune = null
-      if (garageCap) {
-        const resolvedGarage = resolveComuneForCap(
-          garageCap,
-          garageAddressRaw?.city || garageAddressRaw?.comune,
-          garageAddressRaw?.province || garageAddressRaw?.provincia
-        )
-        garageComune = resolvedGarage.comune
-      }
-      const usedOwnAddress = !!garageComune
-      if (!garageComune) {
-        garageComune = resolvedMainComune
-      }
-      const semestreCodeForGarage =
-        resolvedMainSemestreCode || omiOfficialRepo.getLatestSemesterCode()
-
-      if (garageComune && semestreCodeForGarage) {
-        const garageRange = omiOfficialRepo.getComuneRangeByUiTypology({
-          comuneId: garageComune.comune_id,
-          semestreCode: semestreCodeForGarage,
-          uiTypology: 'BOX'
-        })
-        if (garageRange && garageRange.zone_count_used > 0) {
-          const garageMin = Number(garageRange.min_comune_eur_mq)
-          const garageMax = Number(garageRange.max_comune_eur_mq)
-          const garageAvg = (garageMin + garageMax) / 2
-          valutazioneGarage = {
-            disponibile: true,
-            superficie: garageArea,
-            prezzoAlMetroQuadro: Math.round(garageAvg),
-            prezzoStimato: Math.round(garageAvg * garageArea),
-            tipologia: garageRange.descr_tipologia,
-            comune: garageComune.denominazione_comune,
-            provincia: garageComune.sigla_provincia,
-            semestre: semestreCodeForGarage,
-            indirizzoProprio: usedOwnAddress,
-            zone_count_used: garageRange.zone_count_used,
-            sources: garageRange.sources
-          }
-        } else {
-          valutazioneGarage = {
-            disponibile: false,
-            superficie: garageArea,
-            motivo:
-              'Nessun valore OMI ufficiale per la tipologia "Box" in questo comune'
-          }
-        }
-      } else {
-        valutazioneGarage = {
-          disponibile: false,
-          superficie: garageArea,
-          motivo: 'Comune del garage non determinato'
-        }
-      }
-    } catch (e) {
-      console.error('Errore valutazione garage:', e)
-      valutazioneGarage = {
-        disponibile: false,
-        superficie: garageArea,
-        motivo: 'Errore nel recupero dei dati OMI per il garage'
-      }
+  // Garage/posto auto: non viene più valutato economicamente (i valori OMI
+  // "Box" per comune si sono rivelati troppo spesso assenti o inaffidabili
+  // per dare una stima utile). Se l'utente ha segnalato di averne uno, lo
+  // riportiamo solo come caratteristica dell'immobile, con dati "non
+  // pervenuti" invece di un prezzo stimato — vedi ValuationBox.jsx per come
+  // viene mostrato lato utente.
+  if (hasGarage) {
+    valutazioneGarage = {
+      disponibile: false,
+      motivo: 'Dati non pervenuti'
     }
   }
 

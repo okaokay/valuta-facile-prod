@@ -1398,7 +1398,7 @@ export async function generateValuationReport(data: ValuationReportData): Promis
 
     if (data.garage) {
       if (y > doc.page.height - 140) { doc.addPage(); y = drawPageFrame(doc, 'Analisi di mercato') }
-      y = sectionTitle(doc, y, 'Valutazione garage/posto auto')
+      y = sectionTitle(doc, y, 'Garage/posto auto')
       if (data.garage.disponibile) {
         doc.fillColor(SLATE).fontSize(8).font('Helvetica').text('SUPERFICIE', MARGIN, y)
         doc.fillColor(INK).fontSize(10).font('Helvetica').text(`${data.garage.superficie || 0} mq`, MARGIN + 200, y)

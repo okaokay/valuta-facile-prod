@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import CompactAddressSearch from './CompactAddressSearch'
 
 export function AnimatedSelect({ value, onChange, options, placeholder }) {
   const [open, setOpen] = useState(false)
@@ -780,44 +779,10 @@ function FeaturesFormCompetitor({
               </span>
             </button>
             {wizardData.extra.hasGarage && (
-              <div className="mt-2 relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-semibold text-slate-900">
-                  m²
-                </div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={wizardData.extra.garageArea ?? ''}
-                  onChange={(e) =>
-                    handleExtraValueChange(
-                      'garageArea',
-                      e.target.value ? parseFloat(e.target.value) : ''
-                    )
-                  }
-                  className={inputClass + ' pl-12'}
-                  placeholder="Mq garage/posto auto"
-                />
-                <div className="mt-1 text-[11px] text-slate-600">
-                  Il garage viene valutato a parte con i valori OMI dedicati,
-                  senza incidere sul prezzo dell&apos;abitazione.
-                </div>
-                <div className="mt-3">
-                  <label className="mb-1 block text-xs font-semibold text-slate-900">
-                    Indirizzo del garage
-                  </label>
-                  <CompactAddressSearch
-                    value={wizardData.extra.garageAddress}
-                    onChange={(address) =>
-                      handleExtraValueChange('garageAddress', address)
-                    }
-                    placeholder="Cerca l'indirizzo del garage..."
-                  />
-                  <div className="mt-1 text-[11px] text-slate-600">
-                    Lascia vuoto se il garage è nello stesso indirizzo
-                    dell&apos;abitazione.
-                  </div>
-                </div>
+              <div className="mt-2 text-[11px] text-slate-600">
+                Il garage/posto auto non viene valutato economicamente: dati
+                non pervenuti. Viene comunque segnalato come caratteristica
+                dell&apos;immobile.
               </div>
             )}
           </div>

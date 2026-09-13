@@ -251,31 +251,11 @@ function ValuationBox({
           {valutazioneGarage && (
             <div className="mt-6 rounded-2xl border-2 border-slate-900 bg-slate-50 px-5 py-4">
               <div className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
-                Valutazione separata: garage/posto auto
+                Garage/posto auto
               </div>
-              {valutazioneGarage.disponibile ? (
-                <div className="flex flex-col items-center text-center">
-                  <div className="text-xs text-slate-600">
-                    {valutazioneGarage.superficie} m² ×{' '}
-                    {formatCurrency(valutazioneGarage.prezzoAlMetroQuadro)}/m²
-                  </div>
-                  <div className="mt-1 text-2xl font-bold text-slate-900">
-                    {formatCurrency(valutazioneGarage.prezzoStimato)}
-                  </div>
-                  <div className="mt-2 text-[11px] text-slate-500">
-                    Basata sui valori OMI ufficiali &quot;Box&quot;
-                    {valutazioneGarage.comune
-                      ? ` di ${valutazioneGarage.comune}`
-                      : ' del comune'}{' '}
-                    — non è incluso nel prezzo dell&apos;abitazione qui sopra.
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-sm text-slate-600">
-                  {valutazioneGarage.motivo ||
-                    'Valutazione del garage non disponibile per questo comune.'}
-                </div>
-              )}
+              <div className="text-center text-sm text-slate-600">
+                {valutazioneGarage.motivo || 'Dati non pervenuti'}
+              </div>
             </div>
           )}
 
