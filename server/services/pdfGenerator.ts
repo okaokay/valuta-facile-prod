@@ -140,6 +140,7 @@ export interface ValuationReportData {
       cap: string
       comune: string
       prezzoAlMq: number
+      distanceMeters?: number
     }>
   } | null
   nearbyPoi?: {
@@ -1383,7 +1384,8 @@ export async function generateValuationReport(data: ValuationReportData): Promis
           doc.fillColor(ACCENT).fontSize(9).font('Helvetica-Bold').text(`${formatEuro(v.prezzoAlMq)}/mq`, MARGIN + contentWidth - 120, y, { width: 120, align: 'right' })
           y += 13
           const articolo = /^(8|11)\b/.test(v.dataValutazione) ? "l'" : 'il '
-          doc.fillColor(SLATE).fontSize(7.5).font('Helvetica').text(`Valutato ${articolo}${v.dataValutazione}`, MARGIN, y)
+          const distanzaLabel = typeof v.distanceMeters === 'number' ? ` · a ${v.distanceMeters} m` : ''
+          doc.fillColor(SLATE).fontSize(7.5).font('Helvetica').text(`Valutato ${articolo}${v.dataValutazione}${distanzaLabel}`, MARGIN, y)
           y += 16
         })
         y = chartCaption(doc, y, "Queste sono valutazioni recenti effettuate dagli utenti su immobili vicini al tuo (non foto reali dell'immobile, ma la posizione e le caratteristiche dichiarate): un ulteriore confronto diretto, oltre alle medie di zona riportate sopra.")

@@ -9,7 +9,7 @@ import { isDisposableEmail } from '../utils/emailUtils.js'
 import { generateValuationReport } from '../services/pdfGenerator.ts'
 import { getLeadById, createPurchase, getReportCredits, consumeReportCredit, claimLeadForUser, getScuoleForComune, getPopolazioneTrendForComune, getInviteSession, insertInviteFeedback } from '../db.js'
 import { sendTransactionalEmail, addSubscriber } from '../services/listmonk.ts'
-import { getMarketData } from '../services/realAdvisorMarketData.js'
+import { getMarketData, filterRecentValuationsByRadius } from '../services/realAdvisorMarketData.js'
 import { getNearbyPoi } from '../services/poiData.js'
 import { getValuationEngine } from '../services/valuationEngineRegistry.js'
 import { OmiOfficialRepository } from '../services/OmiOfficialRepository.js'
@@ -193,6 +193,9 @@ async function buildPdfData(lead: any, email: string, media: any[] = []) {
     }
   }
 
+  const propertyLat = typeof lead?.lat === 'number' ? lead.lat : addressData?.lat
+  const propertyLng = typeof lead?.lng === 'number' ? lead.lng : (addressData?.lon ?? addressData?.lng)
+
   let marketData = null
   try {
     marketData = await getMarketData({
@@ -201,14 +204,28 @@ async function buildPdfData(lead: any, email: string, media: any[] = []) {
       provincia: addressData?.state || null,
       via: addressData?.street || addressData?.via || null
     })
+    if (marketData?.recentValuations?.length) {
+      // Vedi filterRecentValuationsByRadius: RealAdvisor raggruppa per
+      // via/zona ma non garantisce un raggio preciso — qui teniamo solo le
+      // valutazioni entro 500 m reali dall'immobile. Se nessuna rientra, il
+      // campo resta vuoto e la sezione non viene mostrata (vedi
+      // pdfGenerator.ts, `if (md.recentValuations && md.recentValuations.length)`).
+      marketData = {
+        ...marketData,
+        recentValuations: await filterRecentValuationsByRadius(marketData.recentValuations, {
+          lat: propertyLat,
+          lng: propertyLng
+        })
+      }
+    }
   } catch (err) {
     console.error('[report] Errore recupero dati di mercato (RealAdvisor):', err)
   }
 
   let nearbyPoi = null
   try {
-    const lat = typeof lead?.lat === 'number' ? lead.lat : addressData?.lat
-    const lng = typeof lead?.lng === 'number' ? lead.lng : (addressData?.lon ?? addressData?.lng)
+    const lat = propertyLat
+    const lng = propertyLng
     if (typeof lat === 'number' && typeof lng === 'number') {
       nearbyPoi = await getNearbyPoi({ lat, lng })
     }

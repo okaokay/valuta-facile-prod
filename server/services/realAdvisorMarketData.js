@@ -16,6 +16,22 @@ import {
   getCachedMarketData,
   setCachedMarketData
 } from '../db.js'
+import { searchAddressesServerSide } from './geocodeSearch.js'
+
+// Duplicata volutamente da poiData.js (lì è esposta solo dentro `_internal`,
+// pensata per i test di quel modulo, non per essere importata altrove): è
+// una formula pura di poche righe, più semplice duplicarla che creare un
+// accoppiamento fragile tra i due servizi.
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000
+  const toRad = (d) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
 
 const BASE_URL = 'https://realadvisor.it/it/mercato-immobiliare'
 const USER_AGENT =
@@ -359,6 +375,56 @@ export async function getMarketData({ cap, comune, provincia, via } = {}) {
 
   setCachedMarketData(cacheKey, { success: false, payload: null })
   return null
+}
+
+const RECENT_VALUATIONS_RADIUS_METERS = 500
+const RECENT_VALUATIONS_GEOCODE_TIMEOUT_MS = 4000
+
+// Le "ultime valutazioni vicino a via X" di RealAdvisor sono raggruppate per
+// via/zona secondo un criterio loro, non necessariamente entro un raggio
+// preciso — a volte includono immobili più lontani della stessa strada o
+// zona estesa. Qui filtriamo a un raggio massimo esatto (default 500 m)
+// rispetto all'immobile valutato, geocodificando l'indirizzo testuale di
+// ciascuna valutazione (indirizzo, cap, comune — RealAdvisor non fornisce
+// coordinate) e calcolando la distanza reale. Se il raggio non è verificabile
+// (geocodifica fallita) o l'immobile è oltre il raggio, viene scartato: in
+// caso di dubbio meglio non mostrare nulla che mostrare una distanza errata.
+export async function filterRecentValuationsByRadius(
+  recentValuations,
+  { lat, lng, radiusMeters = RECENT_VALUATIONS_RADIUS_METERS } = {}
+) {
+  if (!Array.isArray(recentValuations) || !recentValuations.length) return []
+  if (typeof lat !== 'number' || typeof lng !== 'number') return []
+
+  const withTimeout = (promise) =>
+    Promise.race([
+      promise,
+      new Promise((resolve) => setTimeout(() => resolve([]), RECENT_VALUATIONS_GEOCODE_TIMEOUT_MS))
+    ])
+
+  const results = await Promise.all(
+    recentValuations.map(async (valutazione) => {
+      try {
+        const query = [valutazione.indirizzo, valutazione.cap, valutazione.comune]
+          .filter(Boolean)
+          .join(', ')
+        if (!query) return null
+        const candidates = await withTimeout(searchAddressesServerSide(query))
+        const best = Array.isArray(candidates) ? candidates[0] : null
+        if (!best || typeof best.lat !== 'number' || typeof best.lon !== 'number') {
+          return null
+        }
+        const distanceMeters = haversineMeters(lat, lng, best.lat, best.lon)
+        if (distanceMeters > radiusMeters) return null
+        return { ...valutazione, distanceMeters: Math.round(distanceMeters) }
+      } catch (err) {
+        console.warn('⚠️ RealAdvisor: geocodifica valutazione recente fallita', err.message)
+        return null
+      }
+    })
+  )
+
+  return results.filter(Boolean)
 }
 
 export const _internal = {
