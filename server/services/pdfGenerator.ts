@@ -1554,21 +1554,33 @@ export async function generateValuationReport(data: ValuationReportData): Promis
 
     // Disclaimer legale, ripetuto in fondo all'ultima pagina. Resta dentro la
     // card e sopra la fascia del footer (linea + nome studio), per non
-    // sovrapporsi visivamente al frame di pagina.
+    // sovrapporsi visivamente al frame di pagina. Testo aggiornato su
+    // indicazione del valutatore in fase di test, per chiarire natura ed
+    // esclusioni d'uso della stima (non perizia giurata, non utilizzabile per
+    // fini bancari/giudiziari, ecc.).
+    const disclaimerTitle = 'Valutazione Indicativa Automatica'
     const disclaimerText =
-      'Questo report ha carattere puramente informativo. La valutazione è basata su dati OMI (Osservatorio del Mercato Immobiliare) ' +
-      'e algoritmi di stima, integrati laddove disponibile con dati di mercato pubblici aggiuntivi; non sostituisce una perizia ' +
-      'professionale. Valuta Facile non si assume responsabilità per decisioni prese sulla base di questo documento.'
+      'La presente valutazione è una stima automatica a scopo esclusivamente informativo e orientativo, elaborata senza sopralluogo e ' +
+      'senza intervento di tecnico abilitato. Il valore base è ricavato dalle quotazioni OMI (Osservatorio del Mercato Immobiliare - ' +
+      'Agenzia delle Entrate) per la zona, tipologia ed epoca indicate dall\'utente. A tale valore vengono applicati correttori di ' +
+      'mercato statistici (piano, classe energetica, stato, dotazioni, ecc.). Non costituisce perizia giurata, stima ai sensi ' +
+      'dell\'art. 64 DPR 1142/1949, relazione di stima ex art. 173-bis TUF, né valutazione conforme agli Standard IVS/EVS RICS. ' +
+      'Non può essere utilizzata per fini bancari, mutui, aste giudiziarie, divisioni ereditarie o contenziosi.'
     const disclaimerWidth = contentWidth - 20
+    const disclaimerTitleHeight = doc.heightOfString(disclaimerTitle, { width: disclaimerWidth, align: 'center' })
     const disclaimerTextHeight = doc.heightOfString(disclaimerText, { width: disclaimerWidth, align: 'center' })
-    const disclaimerBoxHeight = disclaimerTextHeight + 20
+    const disclaimerBoxHeight = disclaimerTitleHeight + disclaimerTextHeight + 26
     const footerLineY = doc.page.height - FOOTER_RESERVED
     const disclaimerBoxY = footerLineY - disclaimerBoxHeight - 14
     y = ensureSpace(doc, y, 'Riepilogo', disclaimerBoxHeight + 40)
     doc.roundedRect(MARGIN - 4, disclaimerBoxY, contentWidth + 8, disclaimerBoxHeight, 8).fill(SLATE_LIGHT)
+    doc.fillColor(SLATE).fontSize(7.5).font('Helvetica-Bold').text(
+      disclaimerTitle,
+      MARGIN + 6, disclaimerBoxY + 10, { width: disclaimerWidth, align: 'center' }
+    )
     doc.fillColor(SLATE).fontSize(7).font('Helvetica').text(
       disclaimerText,
-      MARGIN + 6, disclaimerBoxY + 10, { width: disclaimerWidth, align: 'center' }
+      MARGIN + 6, disclaimerBoxY + 10 + disclaimerTitleHeight + 6, { width: disclaimerWidth, align: 'center' }
     )
 
     // --- Numerazione pagine (richiede bufferPages: true) ---

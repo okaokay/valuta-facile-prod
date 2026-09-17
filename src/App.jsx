@@ -957,11 +957,15 @@ function App() {
       hasGarage: false,
       hasCantina: false,
       hasPiscina: false,
+      hasTettoia: false,
+      hasPergolato: false,
       terraceArea: '',
       gardenArea: '',
       garageArea: '',
       garageAddress: null,
-      cantinaArea: ''
+      cantinaArea: '',
+      tettoiaArea: '',
+      pergolatoArea: ''
     },
     lead: {
       profileType: 'PROPRIETARIO', // 'PROPRIETARIO' | 'CLIENTE_ACQUIRENTE' | 'PROFESSIONISTA'
@@ -1682,6 +1686,13 @@ function App() {
       hasCantina: !!wizardData.extra?.hasCantina,
       cantinaArea: Number(wizardData.extra?.cantinaArea) || 0,
       hasPiscina: !!wizardData.extra?.hasPiscina,
+      // Tettoia/pergolato: stesso meccanismo del giardino (scaglioni
+      // progressivi), solo per Ville/Villette/Rustici (validato anche lato
+      // server).
+      hasTettoia: !!wizardData.extra?.hasTettoia,
+      tettoiaArea: Number(wizardData.extra?.tettoiaArea) || 0,
+      hasPergolato: !!wizardData.extra?.hasPergolato,
+      pergolatoArea: Number(wizardData.extra?.pergolatoArea) || 0,
       // Zona di pregio (es. centro storico): annulla i malus età/stato/no
       // ascensore/mansarda e limita il bonus complessivo a un tetto massimo
       // (vedi ZONA_DI_PREGIO_MAX_BONUS_MULTIPLIER lato server).
@@ -2317,11 +2328,15 @@ function App() {
         hasGarage: false,
         hasCantina: false,
         hasPiscina: false,
+        hasTettoia: false,
+        hasPergolato: false,
         terraceArea: '',
         gardenArea: '',
         garageArea: '',
         garageAddress: null,
-        cantinaArea: ''
+        cantinaArea: '',
+        tettoiaArea: '',
+        pergolatoArea: ''
       },
       lead: {
         profileType: 'PROPRIETARIO',

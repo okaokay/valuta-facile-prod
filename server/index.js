@@ -594,6 +594,7 @@ app.post('/api/valuation/ai-analyze', async (req, res) => {
 // corrispettivo OMI diretto: si ottiene applicando +15% al valore di "Ottimo".
 const CONDITION_TO_OMI_STATO = {
   'Da ristrutturare': 'SCADENTE',
+  'Normale/vivibile': 'NORMALE',
   Buono: 'NORMALE',
   Ottimo: 'OTTIMO'
 }
@@ -605,6 +606,13 @@ const CONDITION_TO_OMI_STATO = {
 const CONDITION_FALLBACK_MULTIPLIER = {
   'Da ristrutturare': 0.75, // -25% dal valore Normale
   Ottimo: 1.55 // +55% dal valore Normale
+}
+
+// "Normale/vivibile" è uno stato aggiuntivo, distinto da "Buono": condivide
+// lo stesso stato OMI di riferimento (NORMALE) ma riceve un piccolo bonus
+// fisso, secondo indicazione del valutatore in fase di test.
+const CONDITION_EXTRA_BONUS_MULTIPLIER = {
+  'Normale/vivibile': 0.03
 }
 
 const NUOVO_SURCHARGE_MULTIPLIER = 1.15 // Nuovo = valore di Ottimo + 15%
@@ -652,24 +660,70 @@ const VILLA_CATEGORY_BONUS_MULTIPLIER = 0.08
 
 // Stabile/Palazzo: il campo "Piano" indica il numero di piani dell'intero
 // edificio (dato informativo), un concetto diverso dalla posizione di un
-// singolo appartamento in condominio. Nessun bonus/malus applicato.
+// singolo appartamento in condominio. Nessun bonus/malus piano applicato,
+// ma su richiesta del valutatore si applica un bonus fisso se l'edificio ha
+// l'ascensore (dato di comodo per l'intero stabile, non per piano).
 const STABILE_PROPERTY_TYPES = ['STABILE/PALAZZO']
+const STABILE_ELEVATOR_BONUS_MULTIPLIER = 0.05
 
 // Coefficienti di conversione mq giardino -> superficie di calcolo, secondo
 // la prassi di stima immobiliare (coefficienti di merito): oltre i 25 mq il
 // giardino pesa progressivamente meno (si usa metà del coefficiente base).
-const GARDEN_COEFFICIENT_VILLA_LIKE = 0.1
+// Usato per le abitazioni in condominio (Appartamento e simili); per Ville e
+// Villette/Rustici si usano scaglioni progressivi dedicati, vedi
+// GARDEN_LIKE_BANDS_BY_TYPE sotto.
 const GARDEN_COEFFICIENT_APARTMENT_LIKE = 0.15
 const GARDEN_AREA_THRESHOLD = 25
 
+// Giardino / pergolato / tettoia per Ville e Villette-Rustici: scaglioni
+// progressivi indicati dal valutatore in fase di test (25% per la prima
+// fascia, poi 10% fino a 300 mq, poi 5% oltre). La soglia della prima fascia
+// è più ampia per le Ville (50 mq) rispetto a Villette a schiera e
+// Rustico/Casale (35 mq). Applicati identicamente a pergolato e tettoia
+// (stessa prassi, stessi coefficienti).
+const GARDEN_LIKE_BANDS_VILLA = [
+  { upTo: 50, rate: 0.25 },
+  { upTo: 300, rate: 0.1 },
+  { upTo: Infinity, rate: 0.05 }
+]
+const GARDEN_LIKE_BANDS_VILLETTA = [
+  { upTo: 35, rate: 0.25 },
+  { upTo: 300, rate: 0.1 },
+  { upTo: Infinity, rate: 0.05 }
+]
+
+// Calcola il bonus (in mq equivalenti da aggiungere alla superficie) per
+// un'area a scaglioni progressivi: ogni fascia si applica solo alla propria
+// quota di superficie, non all'intera area.
+function computeProgressiveAreaBonus(areaRaw, bands) {
+  const area = Number(areaRaw) || 0
+  if (area <= 0) return 0
+  let remaining = area
+  let prevCap = 0
+  let total = 0
+  for (const band of bands) {
+    if (remaining <= 0) break
+    const bandWidth = band.upTo - prevCap
+    const bandSize = Math.min(remaining, bandWidth)
+    if (bandSize > 0) {
+      total += bandSize * band.rate
+      remaining -= bandSize
+    }
+    prevCap = band.upTo
+  }
+  return total
+}
+
 // Cantina: coefficiente di conversione mq -> superficie di calcolo, in linea
-// con la prassi (20-40% per cantine/soffitte).
+// con la prassi (20-40% per cantine/soffitte). Il valutatore ha fissato un
+// tetto massimo di 15 mq calcolabili: l'eventuale eccedenza non porta
+// ulteriore beneficio.
 const CANTINA_COEFFICIENT = 0.25
+const CANTINA_MAX_AREA_MQ = 15
 
 // Piscina: non è un valore convertibile in mq, ma un bonus percentuale fisso
 // sul prezzo finale (prassi di stima: +5/+10% per piscina di dimensioni
-// adeguate e ben mantenuta). Applicabile solo alle tipologie con terreno
-// proprio (VILLA_LIKE_PROPERTY_TYPES).
+// adeguate e ben mantenuta). Applicabile a tutte le tipologie di immobile.
 const PISCINA_BONUS_MULTIPLIER = 0.07
 
 // Numero di bagni: bonus percentuale sul prezzo finale in base al numero di
@@ -696,6 +750,8 @@ function getBathroomBonusMultiplier(bathroomsRaw) {
 // report come classe con scarsa efficienza energetica (non semplicemente
 // omessa), per trasparenza verso il potenziale acquirente.
 const ENERGY_CLASS_BONUS_MULTIPLIER_BY_CLASS = {
+  D: 0.03,
+  C: 0.03,
   B: 0.05,
   A: 0.07,
   A1: 0.08,
@@ -713,7 +769,8 @@ const ENERGY_CLASS_UNKNOWN_VALUE = 'NON_SO'
 // dei centri storici/zone di pregio, dove questo ragionamento non vale.
 const CONSTRUCTION_YEAR_BANDS = [
   { maxYear: 1969, multiplier: -0.2 },
-  { minYear: 1970, maxYear: 1999, multiplier: -0.1 },
+  { minYear: 1970, maxYear: 1980, multiplier: -0.11 },
+  { minYear: 1981, maxYear: 1999, multiplier: -0.06 },
   { minYear: 2000, maxYear: 2004, multiplier: 0.05 },
   { minYear: 2005, maxYear: 2014, multiplier: 0.15 },
   { minYear: 2015, maxYear: 2019, multiplier: 0.18 },
@@ -828,23 +885,51 @@ async function buildCapBasedValuation(address, property, options = {}) {
   const gardenArea = Number(property?.gardenArea) || 0
   const hasCantina = !!property?.hasCantina
   const cantinaArea = Number(property?.cantinaArea) || 0
+  const hasTettoia = !!property?.hasTettoia
+  const tettoiaArea = Number(property?.tettoiaArea) || 0
+  const hasPergolato = !!property?.hasPergolato
+  const pergolatoArea = Number(property?.pergolatoArea) || 0
 
   const terraceAreaBonus = hasBalconyOrTerrace ? terraceArea * 0.3 : 0
 
-  // Giardino: coefficiente diverso per tipologie con terreno proprio (10%)
-  // rispetto alle abitazioni in condominio (15%); oltre i 25 mq il
-  // coefficiente si dimezza (rendimento decrescente per giardini molto grandi).
-  const gardenCoefficient = isVillaLikeType
-    ? GARDEN_COEFFICIENT_VILLA_LIKE
-    : GARDEN_COEFFICIENT_APARTMENT_LIKE
+  // Categoria "Villa" in senso stretto (non Villetta a schiera/Rustico-Casale):
+  // usata per scegliere la soglia della prima fascia giardino/pergolato/tettoia
+  // (50 mq per Villa, 35 mq per Villetta/Rustico).
+  const isVillaCategoryForBands =
+    String(propertyType).trim().toUpperCase() === 'VILLA'
+  const gardenLikeBands = isVillaCategoryForBands
+    ? GARDEN_LIKE_BANDS_VILLA
+    : GARDEN_LIKE_BANDS_VILLETTA
+
+  // Giardino: per Ville e Villette/Rustici si usano scaglioni progressivi
+  // (25%/10%/5%, vedi GARDEN_LIKE_BANDS_* sopra); per le abitazioni in
+  // condominio si mantiene il coefficiente semplice con dimezzamento oltre i
+  // 25 mq.
   const gardenAreaBonus = hasGarden
-    ? gardenArea <= GARDEN_AREA_THRESHOLD
-      ? gardenArea * gardenCoefficient
-      : GARDEN_AREA_THRESHOLD * gardenCoefficient +
-        (gardenArea - GARDEN_AREA_THRESHOLD) * (gardenCoefficient / 2)
+    ? isVillaLikeType
+      ? computeProgressiveAreaBonus(gardenArea, gardenLikeBands)
+      : gardenArea <= GARDEN_AREA_THRESHOLD
+        ? gardenArea * GARDEN_COEFFICIENT_APARTMENT_LIKE
+        : GARDEN_AREA_THRESHOLD * GARDEN_COEFFICIENT_APARTMENT_LIKE +
+          (gardenArea - GARDEN_AREA_THRESHOLD) * (GARDEN_COEFFICIENT_APARTMENT_LIKE / 2)
     : 0
 
-  const cantinaAreaBonus = hasCantina ? cantinaArea * CANTINA_COEFFICIENT : 0
+  // Pergolato e tettoia: stessa logica del giardino (stessi scaglioni),
+  // applicabili solo alle tipologie con terreno proprio (Villa/Villetta/Rustico).
+  const tettoiaAreaBonus =
+    hasTettoia && isVillaLikeType
+      ? computeProgressiveAreaBonus(tettoiaArea, gardenLikeBands)
+      : 0
+  const pergolatoAreaBonus =
+    hasPergolato && isVillaLikeType
+      ? computeProgressiveAreaBonus(pergolatoArea, gardenLikeBands)
+      : 0
+
+  // Cantina: tetto massimo di 15 mq calcolabili (l'eccedenza non porta
+  // ulteriore beneficio).
+  const cantinaAreaBonus = hasCantina
+    ? Math.min(cantinaArea, CANTINA_MAX_AREA_MQ) * CANTINA_COEFFICIENT
+    : 0
 
   // Mansarda: la quota di superficie con altezza sotto 1,5m (dichiarata come
   // percentuale) conta solo al 20% ai fini del calcolo, come da convenzione
@@ -863,7 +948,12 @@ async function buildCapBasedValuation(address, property, options = {}) {
       : superficie
 
   const superficieCalcolo =
-    superficieEffettiva + terraceAreaBonus + gardenAreaBonus + cantinaAreaBonus
+    superficieEffettiva +
+    terraceAreaBonus +
+    gardenAreaBonus +
+    cantinaAreaBonus +
+    tettoiaAreaBonus +
+    pergolatoAreaBonus
 
   // Loft/Open space: bonus fisso in base all'altezza dei soffitti dichiarata
   // (in metri), oltre lo standard delle abitazioni italiane (2,70m).
@@ -880,9 +970,8 @@ async function buildCapBasedValuation(address, property, options = {}) {
         )
       : 0
 
-  // Piscina: bonus percentuale fisso, applicabile solo alle tipologie con
-  // terreno proprio (Villa, Villetta a schiera, Rustico/Casale).
-  const hasPiscina = !!property?.hasPiscina && isVillaLikeType
+  // Piscina: bonus percentuale fisso, applicabile a tutte le tipologie.
+  const hasPiscina = !!property?.hasPiscina
   const piscinaBonusMultiplier = hasPiscina ? PISCINA_BONUS_MULTIPLIER : 0
 
   // Categoria "Villa": bonus fisso aggiuntivo (vedi VILLA_CATEGORY_BONUS_MULTIPLIER sopra).
@@ -939,6 +1028,13 @@ async function buildCapBasedValuation(address, property, options = {}) {
       : 0
   const floorAdjustmentMultiplier = 1 + floorBonus - floorNoElevatorPenalty
 
+  // Stabile/Palazzo: il "Piano" è il numero di piani dell'intero edificio
+  // (dato informativo, nessun bonus/malus legato alla posizione), ma se
+  // l'ascensore è presente si applica comunque un bonus fisso, su richiesta
+  // del valutatore in fase di test.
+  const stabileElevatorBonusMultiplier =
+    isStabileType && hasElevator ? STABILE_ELEVATOR_BONUS_MULTIPLIER : 0
+
   // Epoca di costruzione: bonus/malus percentuale in base all'anno dichiarato
   // (vedi CONSTRUCTION_YEAR_BANDS sopra). In zona di pregio il malus (anno
   // ante 2000) viene annullato, ma il bonus per gli edifici recenti resta valido.
@@ -954,6 +1050,10 @@ async function buildCapBasedValuation(address, property, options = {}) {
   // qui come fattori percentuali sul prezzo totale. Esposizione,
   // portineria/vigilanza, vista panoramica e aria condizionata sono state
   // rimosse.
+  const condizioneExtraRaw = property?.condition || 'Buono'
+  const conditionExtraBonusMultiplier =
+    CONDITION_EXTRA_BONUS_MULTIPLIER[condizioneExtraRaw] || 0
+
   const totalPriceMultiplierBeforeCap =
     floorAdjustmentMultiplier *
     (1 + piscinaBonusMultiplier) *
@@ -961,7 +1061,9 @@ async function buildCapBasedValuation(address, property, options = {}) {
     (1 + energyClassBonusMultiplier) *
     (1 + constructionYearMultiplier) *
     (1 + bathroomBonusMultiplier) *
-    (1 + villaCategoryBonusMultiplier)
+    (1 + villaCategoryBonusMultiplier) *
+    (1 + stabileElevatorBonusMultiplier) *
+    (1 + conditionExtraBonusMultiplier)
 
   // Zona di pregio: il bonus complessivo risultante (qualunque combinazione
   // di fattori) non può comunque superare questo tetto massimo — evita stime
@@ -1141,10 +1243,11 @@ async function buildCapBasedValuation(address, property, options = {}) {
           prezzoMedio = Math.round(
             avg * superficieCalcolo * totalPriceMultiplier
           )
-          // Su richiesta mostriamo un solo valore preciso: niente più fascia
-          // minimo/massimo ampia a livello di comune.
-          prezzoMinimo = prezzoMedio
-          prezzoMassimo = prezzoMedio
+          // Tre prezzi da mostrare in report/PDF: minimo (-5% dalla stima),
+          // consigliato (la stima stessa, "prezzoMedio"), massimo (+10%),
+          // come richiesto dal valutatore in fase di test.
+          prezzoMinimo = Math.round(prezzoMedio * 0.95)
+          prezzoMassimo = Math.round(prezzoMedio * 1.1)
           omiData = {
             min,
             avg,
@@ -1163,6 +1266,8 @@ async function buildCapBasedValuation(address, property, options = {}) {
             terraceAreaBonus,
             gardenAreaBonus,
             cantinaAreaBonus,
+            tettoiaAreaBonus,
+            pergolatoAreaBonus,
             mansardaLowCeilingPercent,
             loftCeilingHeight,
             loftCeilingHeightBonusMultiplier,
@@ -1170,6 +1275,7 @@ async function buildCapBasedValuation(address, property, options = {}) {
             hasElevator,
             floorBonus,
             floorNoElevatorPenalty,
+            stabileElevatorBonusMultiplier,
             hasPiscina,
             piscinaBonusMultiplier,
             isVillaCategory,
@@ -1181,6 +1287,7 @@ async function buildCapBasedValuation(address, property, options = {}) {
             energyClassBonusMultiplier,
             annoCostruzione: constructionYearInfo.year,
             constructionYearMultiplier,
+            conditionExtraBonusMultiplier,
             zonaDiPregio,
             priceMultiplierCappedByZonaDiPregio,
             zonaDiPregioMaxBonusMultiplier: ZONA_DI_PREGIO_MAX_BONUS_MULTIPLIER,
@@ -1197,8 +1304,12 @@ async function buildCapBasedValuation(address, property, options = {}) {
             (usedFallback
               ? `Valore OMI NORMALE del comune con aggiustamento per condizione "${condizione}" (dato OMI ufficiale non disponibile per questo stato)`
               : `Valore OMI ufficiale del comune per stato "${statoTarget}"${isNuovo ? ' con sovrapprezzo Nuovo (+15%)' : ''}`) +
-            (terraceAreaBonus > 0 || gardenAreaBonus > 0 || cantinaAreaBonus > 0
-              ? ` + superficie maggiorata di ${Math.round(terraceAreaBonus + gardenAreaBonus + cantinaAreaBonus)} mq (terrazzo/giardino/cantina)`
+            (terraceAreaBonus > 0 ||
+            gardenAreaBonus > 0 ||
+            cantinaAreaBonus > 0 ||
+            tettoiaAreaBonus > 0 ||
+            pergolatoAreaBonus > 0
+              ? ` + superficie maggiorata di ${Math.round(terraceAreaBonus + gardenAreaBonus + cantinaAreaBonus + tettoiaAreaBonus + pergolatoAreaBonus)} mq (terrazzo/giardino/cantina/tettoia/pergolato)`
               : '') +
             (floorBonus > 0
               ? ` + piano ${effectiveFloorForBonus === 6 ? 'Attico' : effectiveFloorForBonus} (+${Math.round(floorBonus * 100)}%)`
@@ -1206,8 +1317,14 @@ async function buildCapBasedValuation(address, property, options = {}) {
             (floorNoElevatorPenalty > 0
               ? ` - assenza ascensore al piano ${effectiveFloorForBonus === 6 ? 'Attico' : effectiveFloorForBonus} (-${Math.round(floorNoElevatorPenalty * 100)}%)`
               : '') +
+            (stabileElevatorBonusMultiplier > 0
+              ? ` + ascensore nello stabile (+${Math.round(stabileElevatorBonusMultiplier * 100)}%)`
+              : '') +
             (hasPiscina
               ? ` + piscina (+${Math.round(piscinaBonusMultiplier * 100)}%)`
+              : '') +
+            (conditionExtraBonusMultiplier > 0
+              ? ` + stato "${condizione}" (+${Math.round(conditionExtraBonusMultiplier * 100)}%)`
               : '') +
             (isVillaCategory
               ? ` + categoria Villa (+${Math.round(villaCategoryBonusMultiplier * 100)}%)`
@@ -1300,8 +1417,8 @@ async function buildCapBasedValuation(address, property, options = {}) {
     prezzoMedio = Math.round(
       prezzoAlMetroQuadro * superficieCalcolo * totalPriceMultiplier
     )
-    prezzoMinimo = Math.round(prezzoMedio * 0.85)
-    prezzoMassimo = Math.round(prezzoMedio * 1.15)
+    prezzoMinimo = Math.round(prezzoMedio * 0.95)
+    prezzoMassimo = Math.round(prezzoMedio * 1.1)
     if (fallbackOmi) {
       omiData = {
         ...fallbackOmi,

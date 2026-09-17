@@ -525,6 +525,7 @@ function FeaturesFormCompetitor({
             onChange={val => handleChange('condition', val)}
             options={[
               { value: 'Da ristrutturare', label: 'Da ristrutturare' },
+              { value: 'Normale/vivibile', label: 'Normale/vivibile' },
               { value: 'Buono', label: 'Buono' },
               { value: 'Ottimo', label: 'Ottimo' },
               { value: 'Nuovo', label: 'Nuovo' }
@@ -747,21 +748,103 @@ function FeaturesFormCompetitor({
               </div>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => toggleExtra('hasPiscina')}
+            className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 text-sm ${
+              wizardData.extra.hasPiscina
+                ? 'border-slate-900 bg-slate-900 text-white'
+                : 'border-slate-900 bg-white text-slate-900'
+            }`}
+          >
+            <span>Piscina</span>
+            <span className="font-semibold">
+              {wizardData.extra.hasPiscina ? 'Sì' : 'No'}
+            </span>
+          </button>
           {isVillaLikeType && (
-            <button
-              type="button"
-              onClick={() => toggleExtra('hasPiscina')}
-              className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 text-sm ${
-                wizardData.extra.hasPiscina
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-900 bg-white text-slate-900'
-              }`}
-            >
-              <span>Piscina</span>
-              <span className="font-semibold">
-                {wizardData.extra.hasPiscina ? 'Sì' : 'No'}
-              </span>
-            </button>
+            <div>
+              <button
+                type="button"
+                onClick={() => toggleExtra('hasTettoia')}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 text-sm ${
+                  wizardData.extra.hasTettoia
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-900 bg-white text-slate-900'
+                }`}
+              >
+                <span>Tettoia</span>
+                <span className="font-semibold">
+                  {wizardData.extra.hasTettoia ? 'Sì' : 'No'}
+                </span>
+              </button>
+              {wizardData.extra.hasTettoia && (
+                <div className="mt-2 relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-semibold text-slate-900">
+                    m²
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max="2000"
+                    value={wizardData.extra.tettoiaArea ?? ''}
+                    onChange={(e) =>
+                      handleExtraValueChange(
+                        'tettoiaArea',
+                        e.target.value ? parseFloat(e.target.value) : ''
+                      )
+                    }
+                    className={inputClass + ' pl-12'}
+                    placeholder="Mq tettoia"
+                  />
+                  <div className="mt-1 text-[11px] text-slate-600">
+                    Calcolata con gli stessi coefficienti a scaglioni del giardino.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {isVillaLikeType && (
+            <div>
+              <button
+                type="button"
+                onClick={() => toggleExtra('hasPergolato')}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 text-sm ${
+                  wizardData.extra.hasPergolato
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-900 bg-white text-slate-900'
+                }`}
+              >
+                <span>Pergolato</span>
+                <span className="font-semibold">
+                  {wizardData.extra.hasPergolato ? 'Sì' : 'No'}
+                </span>
+              </button>
+              {wizardData.extra.hasPergolato && (
+                <div className="mt-2 relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-semibold text-slate-900">
+                    m²
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    max="2000"
+                    value={wizardData.extra.pergolatoArea ?? ''}
+                    onChange={(e) =>
+                      handleExtraValueChange(
+                        'pergolatoArea',
+                        e.target.value ? parseFloat(e.target.value) : ''
+                      )
+                    }
+                    className={inputClass + ' pl-12'}
+                    placeholder="Mq pergolato"
+                  />
+                  <div className="mt-1 text-[11px] text-slate-600">
+                    Calcolato con gli stessi coefficienti a scaglioni del giardino.
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           <div>
             <button
