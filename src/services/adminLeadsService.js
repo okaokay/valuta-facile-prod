@@ -195,6 +195,87 @@ export async function deleteAdminLead(id) {
   })
 }
 
+// ─── Affiliati pubblicità (banner/video geolocalizzati) ────────────────────
+
+export async function fetchAdminAffiliates() {
+  return authorizedFetch('/admin/affiliates')
+}
+
+export async function createAdminAffiliate(data) {
+  return authorizedFetch('/admin/affiliates', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+}
+
+export async function fetchAdminAffiliateDetail(id) {
+  return authorizedFetch(`/admin/affiliates/${id}`)
+}
+
+export async function updateAdminAffiliate(id, data) {
+  return authorizedFetch(`/admin/affiliates/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+}
+
+export async function deleteAdminAffiliate(id) {
+  return authorizedFetch(`/admin/affiliates/${id}`, { method: 'DELETE' })
+}
+
+export async function fetchAdminAffiliateStats(id, params) {
+  const query = buildQuery(params)
+  return authorizedFetch(`/admin/affiliates/${id}/stats${query}`)
+}
+
+export async function fetchAdminCampaigns() {
+  return authorizedFetch('/admin/campaigns')
+}
+
+export async function createAdminCampaign(affiliateId, data) {
+  return authorizedFetch(`/admin/affiliates/${affiliateId}/campaigns`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+}
+
+export async function updateAdminCampaign(id, data) {
+  return authorizedFetch(`/admin/campaigns/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+}
+
+export async function deleteAdminCampaign(id) {
+  return authorizedFetch(`/admin/campaigns/${id}`, { method: 'DELETE' })
+}
+
+export async function uploadAdminCampaignMedia(id, file) {
+  const formData = new FormData()
+  formData.append('media', file)
+  return authorizedFetch(`/admin/campaigns/${id}/media`, {
+    method: 'POST',
+    body: formData
+  })
+}
+
+export async function approveAdminCampaignAsset(id) {
+  return authorizedFetch(`/admin/campaigns/${id}/approve`, { method: 'POST' })
+}
+
+export async function rejectAdminCampaignAsset(id) {
+  return authorizedFetch(`/admin/campaigns/${id}/reject`, { method: 'POST' })
+}
+
+export async function fetchAdminCampaignStats(id, params) {
+  const query = buildQuery(params)
+  return authorizedFetch(`/admin/campaigns/${id}/stats${query}`)
+}
+
 export async function fetchProvinceAnalyticsSummary(params) {
   const query = buildQuery(params)
   return authorizedFetch(`/admin/analytics/province/summary${query}`)

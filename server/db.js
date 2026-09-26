@@ -979,6 +979,372 @@ export function getPopolazioneTrendForComune(comune) {
   }
 }
 
+// ─── Pubblicità affiliati (banner/video geolocalizzati) ────────────────────
+// Un affiliato può avere più campagne (es. una per zona/periodo diverso).
+// Ogni campagna ha un punto di riferimento geografico (CAP o indirizzo,
+// geocodificato in target_lat/target_lon al momento del salvataggio) e un
+// raggio in km: viene mostrata solo agli utenti che valutano un immobile
+// entro quel raggio (vedi Fase 2, matching lato server/index.js). Il flusso
+// self-service (l'affiliato carica da solo un nuovo banner/video dal suo
+// portale) passa da media_pending_url + stato_approvazione, così il nuovo
+// materiale non va live finché non lo approvi da admin.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS affiliates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ragione_sociale TEXT NOT NULL,
+    referente TEXT,
+    email TEXT NOT NULL UNIQUE,
+    telefono TEXT,
+    user_id TEXT,
+    stato TEXT NOT NULL DEFAULT 'attivo',
+    note TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS ad_campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    affiliate_id INTEGER NOT NULL,
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL DEFAULT 'banner',
+    media_url TEXT,
+    media_pending_url TEXT,
+    stato_approvazione TEXT NOT NULL DEFAULT 'approvato',
+    link_destinazione TEXT,
+    cap_target TEXT NOT NULL,
+    indirizzo_target TEXT,
+    target_lat REAL,
+    target_lon REAL,
+    raggio_km REAL NOT NULL DEFAULT 10,
+    data_inizio TEXT,
+    data_fine TEXT,
+    tetto_impressioni INTEGER,
+    tariffa_tipo TEXT NOT NULL DEFAULT 'flat',
+    tariffa_valore REAL NOT NULL DEFAULT 0,
+    stato TEXT NOT NULL DEFAULT 'attiva',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS ad_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id INTEGER NOT NULL,
+    tipo TEXT NOT NULL,
+    cap_utente TEXT,
+    distanza_km REAL,
+    device TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (campaign_id) REFERENCES ad_campaigns(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ad_campaigns_affiliate ON ad_campaigns (affiliate_id);
+  CREATE INDEX IF NOT EXISTS idx_ad_events_campaign ON ad_events (campaign_id);
+  CREATE INDEX IF NOT EXISTS idx_ad_events_created_at ON ad_events (created_at);
+`)
+
+export function createAffiliate({ ragioneSociale, referente, email, telefono, note }) {
+  const result = db.prepare(
+    `INSERT INTO affiliates (ragione_sociale, referente, email, telefono, note)
+     VALUES (@ragione_sociale, @referente, @email, @telefono, @note)`
+  ).run({
+    ragione_sociale: String(ragioneSociale || '').trim(),
+    referente: referente ? String(referente).trim() : null,
+    email: String(email || '').trim().toLowerCase(),
+    telefono: telefono ? String(telefono).trim() : null,
+    note: note ? String(note).trim() : null
+  })
+  return getAffiliateById(result.lastInsertRowid)
+}
+
+export function listAffiliates() {
+  const affiliates = db.prepare(`SELECT * FROM affiliates ORDER BY created_at DESC`).all()
+  const campaignCounts = db.prepare(
+    `SELECT affiliate_id, COUNT(*) as n, SUM(CASE WHEN stato = 'attiva' THEN 1 ELSE 0 END) as attive
+     FROM ad_campaigns GROUP BY affiliate_id`
+  ).all()
+  const countsById = new Map(campaignCounts.map(c => [c.affiliate_id, c]))
+  return affiliates.map(a => ({
+    ...a,
+    campagne_totali: countsById.get(a.id)?.n || 0,
+    campagne_attive: countsById.get(a.id)?.attive || 0
+  }))
+}
+
+export function getAffiliateById(id) {
+  return db.prepare(`SELECT * FROM affiliates WHERE id = ?`).get(id) || null
+}
+
+export function getAffiliateByEmail(email) {
+  if (!email) return null
+  return db.prepare(`SELECT * FROM affiliates WHERE lower(email) = lower(?)`).get(String(email).trim()) || null
+}
+
+export function getAffiliateByUserId(userId) {
+  if (!userId) return null
+  return db.prepare(`SELECT * FROM affiliates WHERE user_id = ?`).get(userId) || null
+}
+
+export function updateAffiliate(id, { ragioneSociale, referente, email, telefono, stato, note }) {
+  const existing = getAffiliateById(id)
+  if (!existing) return null
+  db.prepare(
+    `UPDATE affiliates SET
+       ragione_sociale = ?,
+       referente = ?,
+       email = ?,
+       telefono = ?,
+       stato = ?,
+       note = ?
+     WHERE id = ?`
+  ).run(
+    ragioneSociale !== undefined ? String(ragioneSociale).trim() : existing.ragione_sociale,
+    referente !== undefined ? (referente ? String(referente).trim() : null) : existing.referente,
+    email !== undefined ? String(email).trim().toLowerCase() : existing.email,
+    telefono !== undefined ? (telefono ? String(telefono).trim() : null) : existing.telefono,
+    stato !== undefined ? stato : existing.stato,
+    note !== undefined ? (note ? String(note).trim() : null) : existing.note,
+    id
+  )
+  return getAffiliateById(id)
+}
+
+export function setAffiliateUserId(affiliateId, userId) {
+  db.prepare(`UPDATE affiliates SET user_id = ? WHERE id = ?`).run(userId, affiliateId)
+  return getAffiliateById(affiliateId)
+}
+
+export function deleteAffiliate(id) {
+  const result = db.prepare(`DELETE FROM affiliates WHERE id = ?`).run(id)
+  return result.changes > 0
+}
+
+export function createCampaign({
+  affiliateId,
+  nome,
+  tipo,
+  linkDestinazione,
+  capTarget,
+  indirizzoTarget,
+  targetLat,
+  targetLon,
+  raggioKm,
+  dataInizio,
+  dataFine,
+  tettoImpressioni,
+  tariffaTipo,
+  tariffaValore
+}) {
+  const result = db.prepare(
+    `INSERT INTO ad_campaigns (
+       affiliate_id, nome, tipo, link_destinazione, cap_target, indirizzo_target,
+       target_lat, target_lon, raggio_km, data_inizio, data_fine,
+       tetto_impressioni, tariffa_tipo, tariffa_valore
+     ) VALUES (
+       @affiliate_id, @nome, @tipo, @link_destinazione, @cap_target, @indirizzo_target,
+       @target_lat, @target_lon, @raggio_km, @data_inizio, @data_fine,
+       @tetto_impressioni, @tariffa_tipo, @tariffa_valore
+     )`
+  ).run({
+    affiliate_id: affiliateId,
+    nome: String(nome || '').trim(),
+    tipo: tipo === 'video' ? 'video' : 'banner',
+    link_destinazione: linkDestinazione ? String(linkDestinazione).trim() : null,
+    cap_target: String(capTarget || '').trim(),
+    indirizzo_target: indirizzoTarget ? String(indirizzoTarget).trim() : null,
+    target_lat: typeof targetLat === 'number' ? targetLat : null,
+    target_lon: typeof targetLon === 'number' ? targetLon : null,
+    raggio_km: Number(raggioKm) || 10,
+    data_inizio: dataInizio || null,
+    data_fine: dataFine || null,
+    tetto_impressioni: Number.isFinite(Number(tettoImpressioni)) ? Number(tettoImpressioni) : null,
+    tariffa_tipo: ['cpm', 'cpc', 'flat'].includes(tariffaTipo) ? tariffaTipo : 'flat',
+    tariffa_valore: Number(tariffaValore) || 0
+  })
+  return getCampaignById(result.lastInsertRowid)
+}
+
+export function listCampaignsByAffiliate(affiliateId) {
+  return db.prepare(`SELECT * FROM ad_campaigns WHERE affiliate_id = ? ORDER BY created_at DESC`).all(affiliateId)
+}
+
+export function listAllCampaigns() {
+  return db.prepare(
+    `SELECT c.*, a.ragione_sociale, a.email as affiliate_email
+     FROM ad_campaigns c
+     JOIN affiliates a ON a.id = c.affiliate_id
+     ORDER BY c.created_at DESC`
+  ).all()
+}
+
+export function getCampaignById(id) {
+  return db.prepare(`SELECT * FROM ad_campaigns WHERE id = ?`).get(id) || null
+}
+
+export function updateCampaign(id, fields) {
+  const existing = getCampaignById(id)
+  if (!existing) return null
+  const map = {
+    nome: 'nome',
+    tipo: 'tipo',
+    linkDestinazione: 'link_destinazione',
+    capTarget: 'cap_target',
+    indirizzoTarget: 'indirizzo_target',
+    targetLat: 'target_lat',
+    targetLon: 'target_lon',
+    raggioKm: 'raggio_km',
+    dataInizio: 'data_inizio',
+    dataFine: 'data_fine',
+    tettoImpressioni: 'tetto_impressioni',
+    tariffaTipo: 'tariffa_tipo',
+    tariffaValore: 'tariffa_valore',
+    stato: 'stato'
+  }
+  const setClauses = []
+  const params = { id }
+  for (const [jsKey, column] of Object.entries(map)) {
+    if (fields[jsKey] !== undefined) {
+      setClauses.push(`${column} = @${column}`)
+      params[column] = fields[jsKey]
+    }
+  }
+  if (!setClauses.length) return existing
+  db.prepare(`UPDATE ad_campaigns SET ${setClauses.join(', ')} WHERE id = @id`).run(params)
+  return getCampaignById(id)
+}
+
+export function setCampaignMedia(id, mediaUrl) {
+  db.prepare(
+    `UPDATE ad_campaigns SET media_url = ?, media_pending_url = NULL, stato_approvazione = 'approvato' WHERE id = ?`
+  ).run(mediaUrl, id)
+  return getCampaignById(id)
+}
+
+// Upload self-service dell'affiliato: il file caricato NON sostituisce
+// subito media_url (quello live), resta in media_pending_url finché
+// l'admin non lo approva (vedi approveCampaignAsset) o rifiuta.
+export function setCampaignPendingMedia(id, mediaUrl) {
+  db.prepare(
+    `UPDATE ad_campaigns SET media_pending_url = ?, stato_approvazione = 'in_attesa' WHERE id = ?`
+  ).run(mediaUrl, id)
+  return getCampaignById(id)
+}
+
+export function approveCampaignAsset(id) {
+  const existing = getCampaignById(id)
+  if (!existing || !existing.media_pending_url) return existing
+  db.prepare(
+    `UPDATE ad_campaigns SET media_url = media_pending_url, media_pending_url = NULL, stato_approvazione = 'approvato' WHERE id = ?`
+  ).run(id)
+  return getCampaignById(id)
+}
+
+export function rejectCampaignAsset(id) {
+  db.prepare(
+    `UPDATE ad_campaigns SET media_pending_url = NULL, stato_approvazione = 'rifiutato' WHERE id = ?`
+  ).run(id)
+  return getCampaignById(id)
+}
+
+export function deleteCampaign(id) {
+  const result = db.prepare(`DELETE FROM ad_campaigns WHERE id = ?`).run(id)
+  return result.changes > 0
+}
+
+// Campagne idonee al matching geografico (Fase 2): attive, approvate, con
+// coordinate note e, se impostate, entro le date di validità.
+export function listActiveCampaignsForTargeting() {
+  return db.prepare(
+    `SELECT * FROM ad_campaigns
+     WHERE stato = 'attiva'
+       AND stato_approvazione = 'approvato'
+       AND media_url IS NOT NULL
+       AND target_lat IS NOT NULL
+       AND target_lon IS NOT NULL
+       AND (data_inizio IS NULL OR date(data_inizio) <= date('now'))
+       AND (data_fine IS NULL OR date(data_fine) >= date('now'))`
+  ).all()
+}
+
+export function recordAdEvent({ campaignId, tipo, capUtente, distanzaKm, device }) {
+  db.prepare(
+    `INSERT INTO ad_events (campaign_id, tipo, cap_utente, distanza_km, device)
+     VALUES (@campaign_id, @tipo, @cap_utente, @distanza_km, @device)`
+  ).run({
+    campaign_id: campaignId,
+    tipo,
+    cap_utente: capUtente || null,
+    distanza_km: typeof distanzaKm === 'number' ? distanzaKm : null,
+    device: device || null
+  })
+}
+
+export function getCampaignStats(campaignId, { from, to } = {}) {
+  const where = ['campaign_id = @campaignId']
+  const params = { campaignId }
+  if (from) {
+    where.push('datetime(created_at) >= datetime(@from)')
+    params.from = from
+  }
+  if (to) {
+    where.push('datetime(created_at) <= datetime(@to)')
+    params.to = to
+  }
+  const whereClause = `WHERE ${where.join(' AND ')}`
+
+  const totals = db.prepare(
+    `SELECT
+       SUM(CASE WHEN tipo = 'impression' THEN 1 ELSE 0 END) as impressions,
+       SUM(CASE WHEN tipo = 'click' THEN 1 ELSE 0 END) as clicks,
+       SUM(CASE WHEN tipo = 'video_play' THEN 1 ELSE 0 END) as video_plays,
+       SUM(CASE WHEN tipo = 'video_complete' THEN 1 ELSE 0 END) as video_completes
+     FROM ad_events ${whereClause}`
+  ).get(params)
+
+  const timeseries = db.prepare(
+    `SELECT strftime('%Y-%m-%d', created_at) as giorno,
+            SUM(CASE WHEN tipo = 'impression' THEN 1 ELSE 0 END) as impressions,
+            SUM(CASE WHEN tipo = 'click' THEN 1 ELSE 0 END) as clicks
+     FROM ad_events ${whereClause}
+     GROUP BY giorno ORDER BY giorno ASC`
+  ).all(params)
+
+  const perCap = db.prepare(
+    `SELECT cap_utente, COUNT(*) as n
+     FROM ad_events ${whereClause} AND cap_utente IS NOT NULL
+     GROUP BY cap_utente ORDER BY n DESC LIMIT 20`
+  ).all(params)
+
+  return {
+    impressions: totals.impressions || 0,
+    clicks: totals.clicks || 0,
+    videoPlays: totals.video_plays || 0,
+    videoCompletes: totals.video_completes || 0,
+    ctr: totals.impressions ? Math.round((totals.clicks / totals.impressions) * 1000) / 10 : 0,
+    timeseries,
+    perCap
+  }
+}
+
+export function getAffiliateOverviewStats(affiliateId, range) {
+  const campaigns = listCampaignsByAffiliate(affiliateId)
+  const perCampaign = campaigns.map(c => ({
+    campaign: c,
+    stats: getCampaignStats(c.id, range)
+  }))
+  const totals = perCampaign.reduce((acc, c) => ({
+    impressions: acc.impressions + c.stats.impressions,
+    clicks: acc.clicks + c.stats.clicks,
+    videoPlays: acc.videoPlays + c.stats.videoPlays,
+    videoCompletes: acc.videoCompletes + c.stats.videoCompletes
+  }), { impressions: 0, clicks: 0, videoPlays: 0, videoCompletes: 0 })
+  return {
+    totals: {
+      ...totals,
+      ctr: totals.impressions ? Math.round((totals.clicks / totals.impressions) * 1000) / 10 : 0
+    },
+    perCampaign
+  }
+}
+
 export function getSetting(key, defaultValue = null) {
   const row = db.prepare(`SELECT value FROM settings WHERE key = ?`).get(key)
   return row ? row.value : defaultValue

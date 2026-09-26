@@ -43,7 +43,23 @@ import {
   updateInviteCode,
   deleteInviteCode,
   hasAnyEnabledInviteCode,
-  INVITE_MAX_EVALUATIONS
+  INVITE_MAX_EVALUATIONS,
+  createAffiliate,
+  listAffiliates,
+  getAffiliateById,
+  updateAffiliate,
+  deleteAffiliate,
+  createCampaign,
+  listCampaignsByAffiliate,
+  listAllCampaigns,
+  getCampaignById,
+  updateCampaign,
+  deleteCampaign,
+  setCampaignMedia,
+  approveCampaignAsset,
+  rejectCampaignAsset,
+  getCampaignStats,
+  getAffiliateOverviewStats
 } from './db.js'
 import { normalizeEmail, isDisposableEmail } from './utils/emailUtils.js'
 import { auth } from './auth.ts'
@@ -768,13 +784,13 @@ const ENERGY_CLASS_UNKNOWN_VALUE = 'NON_SO'
 // energetici e antisismici moderni). Vedi ZONA_DI_PREGIO sotto per l'eccezione
 // dei centri storici/zone di pregio, dove questo ragionamento non vale.
 const CONSTRUCTION_YEAR_BANDS = [
-  { maxYear: 1969, multiplier: -0.2 },
-  { minYear: 1970, maxYear: 1980, multiplier: -0.11 },
+  { maxYear: 1968, multiplier: -0.1 },
+  { minYear: 1969, maxYear: 1980, multiplier: -0.08 },
   { minYear: 1981, maxYear: 1999, multiplier: -0.06 },
   { minYear: 2000, maxYear: 2004, multiplier: 0.05 },
-  { minYear: 2005, maxYear: 2014, multiplier: 0.15 },
-  { minYear: 2015, maxYear: 2019, multiplier: 0.18 },
-  { minYear: 2020, multiplier: 0.3 }
+  { minYear: 2005, maxYear: 2014, multiplier: 0.09 },
+  { minYear: 2015, maxYear: 2019, multiplier: 0.12 },
+  { minYear: 2020, multiplier: 0.24 }
 ]
 
 function getConstructionYearMultiplier(yearBuiltRaw) {
@@ -1964,6 +1980,241 @@ app.get('/api/admin/invite/feedback', requireAdmin, (req, res) => {
     return res.json({ feedback: getInviteFeedback(code) })
   } catch (e) {
     console.error('[admin/invite/feedback] Errore:', e)
+    return res.status(500).json({ error: 'fetch_failed' })
+  }
+})
+
+// ─── Pubblicità affiliati (banner/video geolocalizzati) ────────────────────
+// Cartella dedicata per i media caricati dagli affiliati (o da admin per
+// loro conto), separata da /uploads generico per tenere ordine. Video anche
+// pesanti sono ammessi (limite alto ma non infinito, per evitare abusi).
+const affiliateMediaDir = path.join(uploadsDir, 'affiliati')
+if (!fs.existsSync(affiliateMediaDir)) {
+  fs.mkdirSync(affiliateMediaDir, { recursive: true })
+}
+const affiliateMediaStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, affiliateMediaDir)
+  },
+  filename(req, file, cb) {
+    const unique = `${Date.now()}_${Math.round(Math.random() * 1e9)}`
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')
+    cb(null, `${unique}_${safeName}`)
+  }
+})
+const uploadAffiliateMedia = multer({
+  storage: affiliateMediaStorage,
+  limits: { fileSize: 150 * 1024 * 1024 } // 150MB, video inclusi
+})
+
+// Geocodifica il punto di riferimento di una campagna (indirizzo se
+// presente, altrimenti solo il CAP) per poter calcolare la distanza in km
+// dall'immobile valutato (Fase 2). Se la geocodifica fallisce la campagna
+// resta salvata ma senza coordinate: non verrà considerata per il matching
+// (vedi listActiveCampaignsForTargeting) finché non viene corretta.
+async function geocodeCampaignTarget({ capTarget, indirizzoTarget }) {
+  const query = indirizzoTarget?.trim()
+    ? indirizzoTarget.trim()
+    : capTarget?.trim()
+      ? `${capTarget.trim()}, Italia`
+      : null
+  if (!query) return { lat: null, lon: null }
+  try {
+    const candidates = await searchAddressesServerSide(query)
+    const best = Array.isArray(candidates) ? candidates[0] : null
+    if (best && typeof best.lat === 'number' && typeof best.lon === 'number') {
+      return { lat: best.lat, lon: best.lon }
+    }
+  } catch (e) {
+    console.error('[admin/affiliates] Errore geocodifica target campagna:', e.message)
+  }
+  return { lat: null, lon: null }
+}
+
+app.get('/api/admin/affiliates', requireAdmin, (req, res) => {
+  try {
+    return res.json({ affiliates: listAffiliates() })
+  } catch (e) {
+    console.error('[admin/affiliates] Errore lista:', e)
+    return res.status(500).json({ error: 'fetch_failed' })
+  }
+})
+
+app.post('/api/admin/affiliates', requireAdmin, (req, res) => {
+  const { ragioneSociale, referente, email, telefono, note } = req.body || {}
+  if (!ragioneSociale?.trim() || !email?.trim()) {
+    return res.status(400).json({ error: 'missing_fields' })
+  }
+  try {
+    const affiliate = createAffiliate({ ragioneSociale, referente, email, telefono, note })
+    return res.json({ affiliate })
+  } catch (e) {
+    if (String(e.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'email_already_exists' })
+    }
+    console.error('[admin/affiliates] Errore creazione:', e)
+    return res.status(500).json({ error: 'create_failed' })
+  }
+})
+
+app.get('/api/admin/affiliates/:id', requireAdmin, (req, res) => {
+  const affiliate = getAffiliateById(Number(req.params.id))
+  if (!affiliate) return res.status(404).json({ error: 'not_found' })
+  const campaigns = listCampaignsByAffiliate(affiliate.id)
+  return res.json({ affiliate, campaigns })
+})
+
+app.put('/api/admin/affiliates/:id', requireAdmin, (req, res) => {
+  try {
+    const affiliate = updateAffiliate(Number(req.params.id), req.body || {})
+    if (!affiliate) return res.status(404).json({ error: 'not_found' })
+    return res.json({ affiliate })
+  } catch (e) {
+    console.error('[admin/affiliates] Errore aggiornamento:', e)
+    return res.status(500).json({ error: 'update_failed' })
+  }
+})
+
+app.delete('/api/admin/affiliates/:id', requireAdmin, (req, res) => {
+  try {
+    deleteAffiliate(Number(req.params.id))
+    return res.json({ success: true })
+  } catch (e) {
+    console.error('[admin/affiliates] Errore eliminazione:', e)
+    return res.status(500).json({ error: 'delete_failed' })
+  }
+})
+
+app.get('/api/admin/campaigns', requireAdmin, (req, res) => {
+  try {
+    return res.json({ campaigns: listAllCampaigns() })
+  } catch (e) {
+    console.error('[admin/campaigns] Errore lista:', e)
+    return res.status(500).json({ error: 'fetch_failed' })
+  }
+})
+
+app.post('/api/admin/affiliates/:id/campaigns', requireAdmin, async (req, res) => {
+  const affiliate = getAffiliateById(Number(req.params.id))
+  if (!affiliate) return res.status(404).json({ error: 'affiliate_not_found' })
+  const {
+    nome, tipo, linkDestinazione, capTarget, indirizzoTarget,
+    raggioKm, dataInizio, dataFine, tettoImpressioni, tariffaTipo, tariffaValore
+  } = req.body || {}
+  if (!nome?.trim() || !capTarget?.trim()) {
+    return res.status(400).json({ error: 'missing_fields' })
+  }
+  try {
+    const { lat, lon } = await geocodeCampaignTarget({ capTarget, indirizzoTarget })
+    const campaign = createCampaign({
+      affiliateId: affiliate.id,
+      nome, tipo, linkDestinazione, capTarget, indirizzoTarget,
+      targetLat: lat, targetLon: lon,
+      raggioKm, dataInizio, dataFine, tettoImpressioni, tariffaTipo, tariffaValore
+    })
+    return res.json({ campaign, geocoded: lat !== null })
+  } catch (e) {
+    console.error('[admin/campaigns] Errore creazione:', e)
+    return res.status(500).json({ error: 'create_failed' })
+  }
+})
+
+app.put('/api/admin/campaigns/:id', requireAdmin, async (req, res) => {
+  const existing = getCampaignById(Number(req.params.id))
+  if (!existing) return res.status(404).json({ error: 'not_found' })
+  const fields = { ...(req.body || {}) }
+  try {
+    // Se cambia il CAP o l'indirizzo target, ri-geocodifica; altrimenti
+    // mantiene le coordinate già salvate.
+    if (fields.capTarget !== undefined || fields.indirizzoTarget !== undefined) {
+      const { lat, lon } = await geocodeCampaignTarget({
+        capTarget: fields.capTarget ?? existing.cap_target,
+        indirizzoTarget: fields.indirizzoTarget ?? existing.indirizzo_target
+      })
+      fields.targetLat = lat
+      fields.targetLon = lon
+    }
+    const campaign = updateCampaign(existing.id, fields)
+    return res.json({ campaign })
+  } catch (e) {
+    console.error('[admin/campaigns] Errore aggiornamento:', e)
+    return res.status(500).json({ error: 'update_failed' })
+  }
+})
+
+app.delete('/api/admin/campaigns/:id', requireAdmin, (req, res) => {
+  try {
+    deleteCampaign(Number(req.params.id))
+    return res.json({ success: true })
+  } catch (e) {
+    console.error('[admin/campaigns] Errore eliminazione:', e)
+    return res.status(500).json({ error: 'delete_failed' })
+  }
+})
+
+// Upload media da pannello admin: va live subito (nessuna approvazione
+// necessaria, l'admin è già "approvato" di suo).
+app.post(
+  '/api/admin/campaigns/:id/media',
+  requireAdmin,
+  uploadAffiliateMedia.single('media'),
+  (req, res) => {
+    const existing = getCampaignById(Number(req.params.id))
+    if (!existing) return res.status(404).json({ error: 'not_found' })
+    if (!req.file) return res.status(400).json({ error: 'missing_file' })
+    try {
+      const mediaUrl = `/api/uploads/affiliati/${req.file.filename}`
+      const campaign = setCampaignMedia(existing.id, mediaUrl)
+      return res.json({ campaign })
+    } catch (e) {
+      console.error('[admin/campaigns/media] Errore upload:', e)
+      return res.status(500).json({ error: 'upload_failed' })
+    }
+  }
+)
+
+app.post('/api/admin/campaigns/:id/approve', requireAdmin, (req, res) => {
+  try {
+    const campaign = approveCampaignAsset(Number(req.params.id))
+    if (!campaign) return res.status(404).json({ error: 'not_found' })
+    return res.json({ campaign })
+  } catch (e) {
+    console.error('[admin/campaigns/approve] Errore:', e)
+    return res.status(500).json({ error: 'approve_failed' })
+  }
+})
+
+app.post('/api/admin/campaigns/:id/reject', requireAdmin, (req, res) => {
+  try {
+    const campaign = rejectCampaignAsset(Number(req.params.id))
+    if (!campaign) return res.status(404).json({ error: 'not_found' })
+    return res.json({ campaign })
+  } catch (e) {
+    console.error('[admin/campaigns/reject] Errore:', e)
+    return res.status(500).json({ error: 'reject_failed' })
+  }
+})
+
+app.get('/api/admin/campaigns/:id/stats', requireAdmin, (req, res) => {
+  const existing = getCampaignById(Number(req.params.id))
+  if (!existing) return res.status(404).json({ error: 'not_found' })
+  try {
+    const { from, to } = req.query || {}
+    return res.json({ stats: getCampaignStats(existing.id, { from, to }) })
+  } catch (e) {
+    console.error('[admin/campaigns/stats] Errore:', e)
+    return res.status(500).json({ error: 'fetch_failed' })
+  }
+})
+
+app.get('/api/admin/affiliates/:id/stats', requireAdmin, (req, res) => {
+  const affiliate = getAffiliateById(Number(req.params.id))
+  if (!affiliate) return res.status(404).json({ error: 'not_found' })
+  try {
+    const { from, to } = req.query || {}
+    return res.json({ stats: getAffiliateOverviewStats(affiliate.id, { from, to }) })
+  } catch (e) {
+    console.error('[admin/affiliates/stats] Errore:', e)
     return res.status(500).json({ error: 'fetch_failed' })
   }
 })

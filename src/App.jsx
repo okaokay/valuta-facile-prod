@@ -31,6 +31,7 @@ import ProfilePage from './pages/ProfilePage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import InviteGate, { INVITE_TOKEN_STORAGE_KEY } from './components/InviteGate'
 import InviteAdminDashboard from './components/InviteAdminDashboard'
+import AffiliatesAdminDashboard from './components/AffiliatesAdminDashboard'
 
 gsap.registerPlugin(ScrollTrigger)
 const TEST_HOME_COPY_VARIANTS = {
@@ -2916,6 +2917,18 @@ function App() {
             </div>
             <button
               type="button"
+              onClick={() => setAdminTab('affiliates')}
+              className={`w-full flex items-center rounded-lg px-3 py-2.5 text-left ${
+                adminTab === 'affiliates'
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span className="mr-2">📺</span>
+              <span>Affiliati pubblicità</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setAdminTab('gdpr-registry')}
               className={`w-full flex items-center rounded-lg px-3 py-2.5 text-left ${
                 adminTab === 'gdpr-registry'
@@ -2985,6 +2998,8 @@ function App() {
                     ? 'Mappa comuni italiani'
                     : adminTab === 'groups-auto'
                     ? 'Raggruppamento automatico'
+                  : adminTab === 'affiliates'
+                    ? 'Affiliati pubblicità'
                   : adminTab === 'gdpr-registry'
                     ? 'Registro trattamenti'
                     : adminTab === 'settings'
@@ -3034,6 +3049,7 @@ function App() {
               />
             )}
             {adminTab === 'invite' && <InviteAdminDashboard />}
+            {adminTab === 'affiliates' && <AffiliatesAdminDashboard />}
             {adminTab === 'groups' && <ContactsGroupsDashboard />}
             {adminTab === 'groups-auto' && (
               <ContactsGroupsDashboard mode="autoGrouping" />
