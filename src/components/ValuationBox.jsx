@@ -1,5 +1,6 @@
 import React from 'react'
 import ReportSellModal from './ReportSellModal'
+import AffiliateAdSlot from './ads/AffiliateAdSlot'
 
 // Per Villa/Villetta a schiera/Rustico-Casale il campo "Piano" contiene il
 // numero di livelli della villa, non la posizione in un condominio.
@@ -258,6 +259,14 @@ function ValuationBox({
               </div>
             </div>
           )}
+
+          <div className="mt-6">
+            <AffiliateAdSlot
+              lat={typeof address?.lat === 'number' ? address.lat : null}
+              lng={typeof address?.lon === 'number' ? address.lon : (typeof address?.lng === 'number' ? address.lng : null)}
+              cap={address?.postcode || address?.cap || null}
+            />
+          </div>
 
           <div className="mt-6">
             <ReportSellModal

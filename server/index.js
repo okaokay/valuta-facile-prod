@@ -47,6 +47,7 @@ import {
   createAffiliate,
   listAffiliates,
   getAffiliateById,
+  setAffiliateUserId,
   updateAffiliate,
   deleteAffiliate,
   createCampaign,
@@ -59,14 +60,18 @@ import {
   approveCampaignAsset,
   rejectCampaignAsset,
   getCampaignStats,
-  getAffiliateOverviewStats
+  getAffiliateOverviewStats,
+  listActiveCampaignsForTargeting,
+  getImpressionCountsForCampaigns,
+  recordAdEvent
 } from './db.js'
 import { normalizeEmail, isDisposableEmail } from './utils/emailUtils.js'
-import { auth } from './auth.ts'
+import { auth, findOrCreateUserByEmail } from './auth.ts'
 import { toNodeHandler, fromNodeHeaders } from 'better-auth/node'
 import paymentRouter from './routes/payment.ts'
 import reportRouter from './routes/report.ts'
 import profileRouter from './routes/profile.ts'
+import affiliatePortalRouter from './routes/affiliatePortal.ts'
 
 dotenv.config()
 
@@ -190,6 +195,7 @@ function requireAdmin(req, res, next) {
 app.use('/api/payment', paymentRouter)
 app.use('/api/report', reportRouter)
 app.use('/api/profile', profileRouter)
+app.use('/api/affiliate', affiliatePortalRouter)
 
 app.post('/api/admin/login-step1', loginLimiter, async (req, res) => {
   const { username, password } = req.body || {}
@@ -2207,6 +2213,27 @@ app.get('/api/admin/campaigns/:id/stats', requireAdmin, (req, res) => {
   }
 })
 
+// Crea (o riusa) l'account Better Auth dell'affiliato con quella email,
+// lo collega all'anagrafica affiliato e gli manda un link per impostare la
+// password e accedere al portale /affiliato — stesso meccanismo già usato
+// per i clienti che acquistano un report dopo il pagamento (vedi payment.ts).
+app.post('/api/admin/affiliates/:id/invite', requireAdmin, async (req, res) => {
+  const affiliate = getAffiliateById(Number(req.params.id))
+  if (!affiliate) return res.status(404).json({ error: 'not_found' })
+  try {
+    const user = await findOrCreateUserByEmail(affiliate.email)
+    setAffiliateUserId(affiliate.id, user.id)
+    const frontendUrl = (process.env.APP_FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '')
+    await auth.api.requestPasswordReset({
+      body: { email: affiliate.email, redirectTo: `${frontendUrl}/crea-password?portale=affiliato` }
+    })
+    return res.json({ success: true, affiliate: getAffiliateById(affiliate.id) })
+  } catch (e) {
+    console.error('[admin/affiliates/invite] Errore:', e)
+    return res.status(500).json({ error: 'invite_failed' })
+  }
+})
+
 app.get('/api/admin/affiliates/:id/stats', requireAdmin, (req, res) => {
   const affiliate = getAffiliateById(Number(req.params.id))
   if (!affiliate) return res.status(404).json({ error: 'not_found' })
@@ -2216,6 +2243,99 @@ app.get('/api/admin/affiliates/:id/stats', requireAdmin, (req, res) => {
   } catch (e) {
     console.error('[admin/affiliates/stats] Errore:', e)
     return res.status(500).json({ error: 'fetch_failed' })
+  }
+})
+
+// Duplicata volutamente (vedi stessa nota in realAdvisorMarketData.js): è
+// una formula pura di poche righe, più semplice duplicarla che creare un
+// accoppiamento fragile tra i due moduli.
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const toRad = (d) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function classifyDevice(userAgent) {
+  return /Mobile|Android|iPhone|iPad/i.test(userAgent || '') ? 'mobile' : 'desktop'
+}
+
+// Trova, tra le campagne attive/approvate con coordinate note, quella
+// idonea per l'immobile valutato (entro il raggio impostato dall'affiliato)
+// con meno impression finora — vedi nota su getImpressionCountsForCampaigns
+// in db.js per il perché di questa scelta invece di un vero round-robin con
+// stato in memoria.
+app.get('/api/ads/match', analyticsLimiter, (req, res) => {
+  const lat = Number(req.query.lat)
+  const lng = Number(req.query.lng)
+  const capUtente = req.query.cap ? String(req.query.cap).trim() : null
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.json({ ad: null })
+  }
+  try {
+    const candidates = listActiveCampaignsForTargeting()
+    const eligible = candidates
+      .map((c) => ({
+        ...c,
+        distanzaKm: haversineKm(lat, lng, c.target_lat, c.target_lon)
+      }))
+      .filter((c) => c.distanzaKm <= c.raggio_km)
+    if (!eligible.length) {
+      return res.json({ ad: null })
+    }
+    const counts = getImpressionCountsForCampaigns(eligible.map((c) => c.id))
+    const underCap = eligible.filter(
+      (c) => !c.tetto_impressioni || (counts[c.id] || 0) < c.tetto_impressioni
+    )
+    if (!underCap.length) {
+      return res.json({ ad: null })
+    }
+    underCap.sort((a, b) => (counts[a.id] || 0) - (counts[b.id] || 0))
+    const leastImpressions = counts[underCap[0].id] || 0
+    const tied = underCap.filter((c) => (counts[c.id] || 0) === leastImpressions)
+    const chosen = tied[Math.floor(Math.random() * tied.length)]
+
+    recordAdEvent({
+      campaignId: chosen.id,
+      tipo: 'impression',
+      capUtente,
+      distanzaKm: Math.round(chosen.distanzaKm * 10) / 10,
+      device: classifyDevice(req.headers['user-agent'])
+    })
+
+    return res.json({
+      ad: {
+        campaignId: chosen.id,
+        tipo: chosen.tipo,
+        mediaUrl: chosen.media_url,
+        linkDestinazione: chosen.link_destinazione
+      }
+    })
+  } catch (e) {
+    console.error('[ads/match] Errore:', e)
+    return res.status(500).json({ error: 'match_failed' })
+  }
+})
+
+app.post('/api/ads/:campaignId/click', analyticsLimiter, (req, res) => {
+  const campaignId = Number(req.params.campaignId)
+  const campaign = getCampaignById(campaignId)
+  if (!campaign) return res.status(404).json({ error: 'not_found' })
+  try {
+    recordAdEvent({
+      campaignId,
+      tipo: 'click',
+      capUtente: req.body?.cap ? String(req.body.cap).trim() : null,
+      device: classifyDevice(req.headers['user-agent'])
+    })
+    return res.json({ success: true })
+  } catch (e) {
+    console.error('[ads/click] Errore:', e)
+    return res.status(500).json({ error: 'track_failed' })
   }
 })
 

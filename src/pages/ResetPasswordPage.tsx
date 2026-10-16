@@ -9,6 +9,7 @@ interface ResetPasswordPageProps {
 export default function ResetPasswordPage({ onNavigate, mode = 'reset' }: ResetPasswordPageProps) {
   const isCreate = mode === 'create'
   const [token, setToken] = useState<string | null>(null)
+  const [isAffiliatePortal, setIsAffiliatePortal] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -18,6 +19,7 @@ export default function ResetPasswordPage({ onNavigate, mode = 'reset' }: ResetP
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const t = params.get('token')
+    setIsAffiliatePortal(params.get('portale') === 'affiliato')
     if (!t) {
       setError('Link non valido o scaduto. Richiedi un nuovo link.')
     } else {
@@ -63,15 +65,24 @@ export default function ResetPasswordPage({ onNavigate, mode = 'reset' }: ResetP
             {isCreate ? 'Account attivato' : 'Password aggiornata'}
           </h1>
           <p className="text-slate-600 text-sm mb-6">
-            {isCreate
-              ? 'La tua password è stata creata. Ora puoi accedere al tuo profilo personale con l\'email usata per il pagamento e la password appena scelta.'
-              : 'La tua password è stata reimpostata correttamente. Ora puoi accedere con le nuove credenziali.'}
+            {isAffiliatePortal
+              ? 'La tua password è stata creata. Ora puoi accedere al portale affiliati con l\'email a cui hai ricevuto l\'invito e la password appena scelta.'
+              : isCreate
+                ? 'La tua password è stata creata. Ora puoi accedere al tuo profilo personale con l\'email usata per il pagamento e la password appena scelta.'
+                : 'La tua password è stata reimpostata correttamente. Ora puoi accedere con le nuove credenziali.'}
           </p>
           <button
-            onClick={() => onNavigate('test_home')}
+            onClick={() => {
+              if (isAffiliatePortal) {
+                window.history.replaceState({}, '', '/affiliato')
+                onNavigate('affiliato')
+              } else {
+                onNavigate('test_home')
+              }
+            }}
             className="bg-slate-900 text-white font-black rounded-full py-3 px-8 shadow-[4px_4px_0_#94a3b8] hover:shadow-[2px_2px_0_#94a3b8] active:shadow-none transition-all"
           >
-            {isCreate ? 'Vai al login' : 'Vai alla home'}
+            {isAffiliatePortal ? 'Vai al portale affiliati' : isCreate ? 'Vai al login' : 'Vai alla home'}
           </button>
         </div>
       </div>

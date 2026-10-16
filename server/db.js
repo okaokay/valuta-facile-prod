@@ -1264,6 +1264,25 @@ export function listActiveCampaignsForTargeting() {
   ).all()
 }
 
+// Conteggio impression già servite per ciascuna campagna (usato sia per il
+// tetto massimo impressioni sia per scegliere, tra le campagne idonee per un
+// utente, quella con meno impression finora — rotazione "least-served-first"
+// equivalente a un round-robin tra gli affiliati, ma senza bisogno di uno
+// stato condiviso in memoria che non sopravviverebbe a un riavvio/più
+// istanze del server).
+export function getImpressionCountsForCampaigns(campaignIds) {
+  if (!Array.isArray(campaignIds) || !campaignIds.length) return {}
+  const placeholders = campaignIds.map(() => '?').join(',')
+  const rows = db.prepare(
+    `SELECT campaign_id, COUNT(*) as n FROM ad_events
+     WHERE tipo = 'impression' AND campaign_id IN (${placeholders})
+     GROUP BY campaign_id`
+  ).all(...campaignIds)
+  const map = {}
+  rows.forEach(r => { map[r.campaign_id] = r.n })
+  return map
+}
+
 export function recordAdEvent({ campaignId, tipo, capUtente, distanzaKm, device }) {
   db.prepare(
     `INSERT INTO ad_events (campaign_id, tipo, cap_utente, distanza_km, device)
@@ -1322,6 +1341,21 @@ export function getCampaignStats(campaignId, { from, to } = {}) {
     timeseries,
     perCap
   }
+}
+
+// Importo maturato per una campagna in base alla tariffa scelta
+// dall'affiliato e alle statistiche del periodo (vedi getCampaignStats).
+// "flat" è un canone fisso indipendente dal traffico: lo stesso importo a
+// prescindere dal periodo richiesto (non viene prorata sui giorni).
+export function computeCampaignAmountDue(campaign, stats) {
+  const valore = Number(campaign?.tariffa_valore) || 0
+  if (campaign?.tariffa_tipo === 'cpm') {
+    return Math.round(((stats?.impressions || 0) / 1000) * valore * 100) / 100
+  }
+  if (campaign?.tariffa_tipo === 'cpc') {
+    return Math.round((stats?.clicks || 0) * valore * 100) / 100
+  }
+  return valore
 }
 
 export function getAffiliateOverviewStats(affiliateId, range) {

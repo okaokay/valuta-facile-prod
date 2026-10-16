@@ -6,6 +6,7 @@ import {
   updateAdminAffiliate,
   deleteAdminAffiliate,
   fetchAdminAffiliateStats,
+  inviteAdminAffiliate,
   createAdminCampaign,
   updateAdminCampaign,
   deleteAdminCampaign,
@@ -57,6 +58,9 @@ function AffiliatesAdminDashboard() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [stats, setStats] = useState(null)
 
+  const [invitingAffiliate, setInvitingAffiliate] = useState(false)
+  const [inviteMessage, setInviteMessage] = useState('')
+
   const [showNewCampaign, setShowNewCampaign] = useState(false)
   const [campaignForm, setCampaignForm] = useState(emptyCampaignForm)
   const [savingCampaign, setSavingCampaign] = useState(false)
@@ -99,6 +103,7 @@ function AffiliatesAdminDashboard() {
   const handleSelect = (id) => {
     setSelectedId(id)
     setShowNewCampaign(false)
+    setInviteMessage('')
     loadDetail(id)
   }
 
@@ -147,6 +152,22 @@ function AffiliatesAdminDashboard() {
       await loadList()
     } catch (e) {
       setError(e.message || "Errore nell'eliminazione")
+    }
+  }
+
+  const handleInvite = async (affiliate) => {
+    setInvitingAffiliate(true)
+    setInviteMessage('')
+    setError('')
+    try {
+      await inviteAdminAffiliate(affiliate.id)
+      setInviteMessage(
+        `Email inviata a ${affiliate.email} con il link per impostare la password e accedere a /affiliato.`
+      )
+    } catch (e) {
+      setError(e.message || "Errore nell'invio dell'invito")
+    } finally {
+      setInvitingAffiliate(false)
     }
   }
 
@@ -356,6 +377,14 @@ function AffiliatesAdminDashboard() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={() => handleInvite(detail.affiliate)}
+                      disabled={invitingAffiliate}
+                      className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white"
+                    >
+                      {detail.affiliate.user_id ? 'Reinvia invito' : 'Invita al portale'}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleToggleStato(detail.affiliate)}
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         detail.affiliate.stato === 'attivo'
@@ -374,6 +403,12 @@ function AffiliatesAdminDashboard() {
                     </button>
                   </div>
                 </div>
+
+                {inviteMessage && (
+                  <div className="mt-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    {inviteMessage}
+                  </div>
+                )}
 
                 {stats && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">

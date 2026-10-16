@@ -28,6 +28,7 @@ import ReportUnlockModal from './components/report/ReportUnlockModal'
 import ValuationAdGateModal from './components/ValuationAdGateModal'
 import AdBanner from './components/ads/AdBanner'
 import ProfilePage from './pages/ProfilePage'
+import AffiliatePortalPage from './pages/AffiliatePortalPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import InviteGate, { INVITE_TOKEN_STORAGE_KEY } from './components/InviteGate'
 import InviteAdminDashboard from './components/InviteAdminDashboard'
@@ -1396,6 +1397,7 @@ function App() {
       const pathIsValutazione =
         path === '/valutazione' || path === '/valutazione/'
       const pathIsProfilo = path === '/profilo' || path === '/profilo/'
+      const pathIsAffiliato = path === '/affiliato' || path === '/affiliato/'
       const pathIsResetPassword = path === '/reset-password' || path === '/reset-password/'
       const pathIsCreaPassword = path === '/crea-password' || path === '/crea-password/'
       const pathIsContact = path === '/contatti' || path === '/contatti/'
@@ -1535,6 +1537,8 @@ function App() {
           // solo il path (es. /profilo/ -> /profilo), senza buttare via il search.
           window.history.replaceState({}, '', '/profilo' + url.search)
         }
+      } else if (pathIsAffiliato) {
+        setCurrentPage('affiliato')
       } else if (pathIsResetPassword) {
         setCurrentPage('reset-password')
       } else if (pathIsCreaPassword) {
@@ -2670,7 +2674,8 @@ function App() {
   // liberamente — solo l'avvio di una nuova valutazione viene bloccato
   // altrove (vedi handlePropertySubmit).
   const isAdminRoute =
-    typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/affiliato'))
   if (!isAdminRoute && inviteGateState === 'locked') {
     return <InviteGate onUnlocked={() => setInviteGateState('unlocked')} />
   }
@@ -2691,6 +2696,10 @@ function App() {
         />
       </div>
     )
+  }
+
+  if (currentPage === 'affiliato') {
+    return <AffiliatePortalPage />
   }
 
   if (currentPage === 'reset-password') {

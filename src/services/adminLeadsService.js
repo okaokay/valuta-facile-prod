@@ -225,6 +225,10 @@ export async function deleteAdminAffiliate(id) {
   return authorizedFetch(`/admin/affiliates/${id}`, { method: 'DELETE' })
 }
 
+export async function inviteAdminAffiliate(id) {
+  return authorizedFetch(`/admin/affiliates/${id}/invite`, { method: 'POST' })
+}
+
 export async function fetchAdminAffiliateStats(id, params) {
   const query = buildQuery(params)
   return authorizedFetch(`/admin/affiliates/${id}/stats${query}`)
