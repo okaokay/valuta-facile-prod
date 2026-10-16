@@ -1,6 +1,7 @@
 import ValuationBox from './ValuationBox'
 import MapDisplay from './MapDisplay'
 import AdBanner from './ads/AdBanner'
+import AffiliateAdSlot from './ads/AffiliateAdSlot'
 
 function ResultSummaryCompetitor({
   valuationResult,
@@ -117,6 +118,16 @@ function ResultSummaryCompetitor({
                 <AdBanner
                   slotEnvVar="VITE_ADSENSE_SLOT_RESULTS"
                   placeholderLabel="Spazio pubblicitario"
+                />
+              </div>
+            )}
+
+            {isValuationUnlocked && (
+              <div className="mt-8">
+                <AffiliateAdSlot
+                  lat={typeof selectedAddress?.lat === 'number' ? selectedAddress.lat : null}
+                  lng={typeof selectedAddress?.lon === 'number' ? selectedAddress.lon : (typeof selectedAddress?.lng === 'number' ? selectedAddress.lng : null)}
+                  cap={selectedAddress?.postcode || selectedAddress?.cap || null}
                 />
               </div>
             )}

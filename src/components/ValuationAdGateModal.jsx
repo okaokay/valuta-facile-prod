@@ -1,20 +1,50 @@
 import { useState, useEffect, useRef } from 'react'
+import { fetchMatchingAd, trackAdClick } from '../services/adsService'
 
 // Gate video obbligatorio prima di mostrare la valutazione.
 // mode:
 //  - 'demo_rewarded' -> video finto/placeholder (5s), usato per collaudare il flusso
 //  - 'live_rewarded'  -> Google Rewarded Ads reali (richiede VITE_ADSENSE_PUBLISHER_ID
 //                        e VITE_ADSENSE_AD_UNIT); se non configurati, ricade sul demo
-function ValuationAdGateModal({ mode, onUnlock, onClose }) {
+//
+// Se per la zona dell'utente (lat/lng/cap, con fallback via IP lato backend)
+// esiste una campagna di un affiliato di tipo "video", quella ha la priorità
+// assoluta: l'utente guarda il video dell'affiliato per sbloccare la
+// valutazione, invece del video Google/demo generico. Se non c'è nessun
+// affiliato video idoneo per quella zona, il comportamento resta quello di
+// sempre (Google Rewarded Ads o countdown demo).
+function ValuationAdGateModal({ mode, lat = null, lng = null, cap = null, onUnlock, onClose }) {
   const [phase, setPhase] = useState('intro') // intro | loading | playing | rewarded
   const [countdown, setCountdown] = useState(0)
+  const [affiliateAd, setAffiliateAd] = useState(null)
   const cleanupRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchMatchingAd({ lat, lng, cap }).then((data) => {
+      if (!cancelled && data?.ad?.tipo === 'video' && data.ad.mediaUrl) {
+        setAffiliateAd(data.ad)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [lat, lng, cap])
 
   useEffect(() => {
     return () => {
       if (cleanupRef.current) cleanupRef.current()
     }
   }, [])
+
+  const handleAffiliateVideoEnded = () => {
+    setPhase('rewarded')
+    setTimeout(() => onUnlock(), 700)
+  }
+
+  const handleAffiliateClick = () => {
+    if (affiliateAd) trackAdClick(affiliateAd.campaignId, { cap })
+  }
 
   const runDemoCountdown = () => {
     let count = 5
@@ -33,6 +63,12 @@ function ValuationAdGateModal({ mode, onUnlock, onClose }) {
   }
 
   const startAd = () => {
+    if (affiliateAd) {
+      // Video dell'affiliato già pronto (recuperato all'apertura del gate):
+      // nessun caricamento esterno, si passa subito alla riproduzione.
+      setPhase('playing')
+      return
+    }
     setPhase('loading')
     const isLive = mode === 'live_rewarded'
     const pubId = import.meta.env.VITE_ADSENSE_PUBLISHER_ID
@@ -122,14 +158,41 @@ function ValuationAdGateModal({ mode, onUnlock, onClose }) {
               </div>
 
               <div id="gpt-rewarded-valuation" className="w-full">
-                {phase === 'loading' && (
+                {affiliateAd && phase === 'playing' && (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-full px-3 py-1 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-semibold uppercase tracking-wide text-slate-400 self-start w-auto">
+                      Promosso
+                    </div>
+                    <video
+                      src={affiliateAd.mediaUrl}
+                      className="w-full max-h-80 rounded-xl object-cover"
+                      autoPlay
+                      playsInline
+                      onEnded={handleAffiliateVideoEnded}
+                    />
+                    {affiliateAd.linkDestinazione && (
+                      <a
+                        href={affiliateAd.linkDestinazione}
+                        target="_blank"
+                        rel="noopener noreferrer sponsored"
+                        onClick={handleAffiliateClick}
+                        className="text-xs text-indigo-600 underline"
+                      >
+                        Scopri di più
+                      </a>
+                    )}
+                    <p className="text-xs text-slate-400">Guarda fino alla fine per sbloccare la valutazione</p>
+                  </div>
+                )}
+
+                {!affiliateAd && phase === 'loading' && (
                   <div className="flex flex-col items-center gap-3 py-8">
                     <div className="animate-spin h-10 w-10 border-4 border-slate-900 border-t-transparent rounded-full" />
                     <p className="text-slate-500 text-sm">Caricamento annuncio…</p>
                   </div>
                 )}
 
-                {phase === 'playing' && countdown > 0 && (
+                {!affiliateAd && phase === 'playing' && countdown > 0 && (
                   <div className="flex flex-col items-center gap-2 py-6">
                     <div className="w-20 h-20 rounded-full border-4 border-indigo-600 flex items-center justify-center">
                       <span className="text-3xl font-black text-indigo-600">{countdown}</span>
@@ -139,7 +202,7 @@ function ValuationAdGateModal({ mode, onUnlock, onClose }) {
                   </div>
                 )}
 
-                {phase === 'playing' && countdown === 0 && (
+                {!affiliateAd && phase === 'playing' && countdown === 0 && (
                   <div className="flex flex-col items-center gap-3 py-8">
                     <span className="text-5xl">🎬</span>
                     <p className="text-slate-500 text-sm">Annuncio in corso…</p>

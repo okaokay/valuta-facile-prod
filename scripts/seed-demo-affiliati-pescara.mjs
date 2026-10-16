@@ -3,8 +3,9 @@
  * seed-demo-affiliati-pescara.mjs
  *
  * Inserisce 3 affiliati pubblicitari DEMO a Pescara (CAP 65126/65121),
- * con relative campagne banner attive e geolocalizzate, per testare il
- * sistema di pubblicità affiliati end-to-end (Fasi 1-4) sul sito live.
+ * con relative campagne attive e geolocalizzate (2 banner + 1 video), per
+ * testare il sistema di pubblicità affiliati end-to-end (Fasi 1-4) sul sito
+ * live, incluso il video dell'affiliato nel gate pre-valutazione.
  *
  * Dati reali di aziende trovate online tramite ricerca pubblica (nome,
  * email generica, indirizzo) — usati qui SOLO a scopo di test interno/demo
@@ -64,7 +65,9 @@ const DEMO = [
     telefono: '085 000 0002',
     note: 'Affiliato DEMO per test sistema pubblicita (ristrutturazioni, zona Pescara)',
     campagna: {
-      nome: 'Banner demo - Ristrutturazioni Abitarbene',
+      nome: 'Video demo - Ristrutturazioni Abitarbene',
+      tipo: 'video',
+      videoAsset: 'demo-abitarbene.mp4',
       capTarget: '65126',
       indirizzoTarget: 'Pescara centro',
       targetLat: 42.4618,
@@ -136,10 +139,11 @@ for (const d of DEMO) {
   }
 
   const c = d.campagna
+  const isVideo = c.tipo === 'video' && c.videoAsset
   const campaign = createCampaign({
     affiliateId: affiliate.id,
     nome: c.nome,
-    tipo: 'banner',
+    tipo: isVideo ? 'video' : 'banner',
     linkDestinazione: null,
     capTarget: c.capTarget,
     indirizzoTarget: c.indirizzoTarget,
@@ -153,14 +157,25 @@ for (const d of DEMO) {
     tariffaValore: 0
   })
 
-  const filename = `demo-${affiliate.id}-${campaign.id}.svg`
-  const filePath = path.join(uploadsAffiliatiDir, filename)
-  fs.writeFileSync(filePath, buildBannerSvg({
-    colore1: c.colore1,
-    colore2: c.colore2,
-    titolo: c.titolo,
-    sottotitolo: c.sottotitolo
-  }))
+  let filename
+  if (isVideo) {
+    // Video demo breve (pochi KB) incluso nel repo in scripts/assets/: viene
+    // semplicemente copiato nella cartella pubblica uploads/affiliati/, cosi
+    // da poter testare subito il video dell'affiliato nel gate pre-valutazione
+    // (vedi ValuationAdGateModal.jsx) senza dover generare video al volo.
+    const sourceAsset = path.resolve(__dirname, 'assets', c.videoAsset)
+    const ext = path.extname(c.videoAsset) || '.mp4'
+    filename = `demo-${affiliate.id}-${campaign.id}${ext}`
+    fs.copyFileSync(sourceAsset, path.join(uploadsAffiliatiDir, filename))
+  } else {
+    filename = `demo-${affiliate.id}-${campaign.id}.svg`
+    fs.writeFileSync(path.join(uploadsAffiliatiDir, filename), buildBannerSvg({
+      colore1: c.colore1,
+      colore2: c.colore2,
+      titolo: c.titolo,
+      sottotitolo: c.sottotitolo
+    }))
+  }
 
   setCampaignMedia(campaign.id, `/api/uploads/affiliati/${filename}`)
 

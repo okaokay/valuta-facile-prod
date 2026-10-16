@@ -36,7 +36,7 @@ const DEFAULT_PITCH = {
 // demo_rewarded o live_rewarded (altrimenti Google non ha ancora approvato le Rewarded Ads).
 // Il pagamento/registrazione/video si aprono come step successivi in overlay, ma il punto
 // di partenza (testo + bottoni) resta sempre in vista nella pagina.
-function ReportSellModal({ profileType, adMode, leadId, onUnlocked, className = '' }) {
+function ReportSellModal({ profileType, adMode, leadId, onUnlocked, className = '', lat = null, lng = null, cap = null }) {
   const { data: session } = authClient.useSession()
   const [phase, setPhase] = useState('intro') // intro | pay-info | auth | video | loading
   const [pendingAction, setPendingAction] = useState(null) // 'video' | 'pay'
@@ -207,6 +207,9 @@ function ReportSellModal({ profileType, adMode, leadId, onUnlocked, className = 
     return (
       <ValuationAdGateModal
         mode={adMode}
+        lat={lat}
+        lng={lng}
+        cap={cap}
         onUnlock={unlockFreeAfterVideo}
         onClose={() => setPhase('intro')}
       />

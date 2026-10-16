@@ -6679,6 +6679,10 @@ function App() {
                     </div>
                   )}
 
+                  <div className="mt-8">
+                    <AffiliateAdSlot />
+                  </div>
+
                   {currentBlogArticle.keyPoints && currentBlogArticle.keyPoints.length > 0 && (
                     <div className="mt-8 border-t border-gray-200 pt-6">
                       <h2 className="text-base sm:text-lg font-semibold text-gray-900">
@@ -6741,6 +6745,10 @@ function App() {
                     />
                   </div>
                 )}
+
+                <div className="mt-10">
+                  <AffiliateAdSlot />
+                </div>
 
                 {relatedBlogArticles.length > 0 && (
                   <div className="mt-10">
@@ -6847,6 +6855,9 @@ function App() {
       {isAdGateOpen && (
         <ValuationAdGateModal
           mode={adMode}
+          lat={typeof selectedAddress?.lat === 'number' ? selectedAddress.lat : null}
+          lng={typeof selectedAddress?.lon === 'number' ? selectedAddress.lon : (typeof selectedAddress?.lng === 'number' ? selectedAddress.lng : null)}
+          cap={selectedAddress?.postcode || selectedAddress?.cap || null}
           onUnlock={() => {
             setIsAdGateOpen(false)
             setIsValuationUnlocked(true)

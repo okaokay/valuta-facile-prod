@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { authClient } from '../lib/auth-client'
 import AdBanner from '../components/ads/AdBanner'
+import AffiliateAdSlot from '../components/ads/AffiliateAdSlot'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string || '').replace(/\/+$/, '') || 'http://localhost:4001/api'
 
@@ -424,6 +425,9 @@ export default function ProfilePage({ onNavigate, adMode }: { onNavigate: (page:
                     <AdBanner slotEnvVar="VITE_ADSENSE_SLOT_PROFILE" placeholderLabel="Spazio pubblicitario" />
                   </div>
                 )}
+                <div className="lg:hidden">
+                  <AffiliateAdSlot />
+                </div>
               </>
             )}
 
@@ -596,6 +600,9 @@ export default function ProfilePage({ onNavigate, adMode }: { onNavigate: (page:
                 <AdBanner slotEnvVar="VITE_ADSENSE_SLOT_PROFILE" placeholderLabel="Spazio pubblicitario" />
               </div>
             )}
+            <div className="hidden lg:block">
+              <AffiliateAdSlot />
+            </div>
           </aside>
         </div>
       </div>

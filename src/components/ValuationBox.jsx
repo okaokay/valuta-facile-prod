@@ -274,6 +274,9 @@ function ValuationBox({
               adMode={adMode}
               leadId={leadId}
               onUnlocked={onReportUnlocked}
+              lat={typeof address?.lat === 'number' ? address.lat : null}
+              lng={typeof address?.lon === 'number' ? address.lon : (typeof address?.lng === 'number' ? address.lng : null)}
+              cap={address?.postcode || address?.cap || null}
             />
           </div>
 
