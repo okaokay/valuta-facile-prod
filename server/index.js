@@ -9,7 +9,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import multer from 'multer'
 import rateLimit from 'express-rate-limit'
-import { randomUUID } from 'crypto'
+import { randomUUID, randomBytes } from 'crypto'
 import { getRealOmiValues } from '../src/services/realOmiService.js'
 import { OmiOfficialRepository } from './services/OmiOfficialRepository.js'
 import { registerValuationEngine } from './services/valuationEngineRegistry.js'
@@ -89,8 +89,25 @@ try {
 }
 
 const PORT = process.env.PORT || 4000
-const ADMIN_JWT_SECRET =
-  process.env.ADMIN_JWT_SECRET || 'dev-secret-change-in-production'
+// Il valore di scorta 'dev-secret-change-in-production' è scritto nel
+// codice sorgente, quindi prevedibile da chiunque lo legga: in produzione,
+// se manca la variabile d'ambiente ADMIN_JWT_SECRET, generiamo invece un
+// segreto casuale e sicuro per quella singola esecuzione (invece di bloccare
+// l'avvio dell'intero sito, che dipende da questo stesso processo). L'unico
+// effetto collaterale è che le sessioni admin attive vengono invalidate ad
+// ogni riavvio del server finché non viene impostata una variabile
+// ADMIN_JWT_SECRET persistente nel file .env — fortemente raccomandato.
+function resolveAdminJwtSecret() {
+  if (process.env.ADMIN_JWT_SECRET) return process.env.ADMIN_JWT_SECRET
+  if (process.env.NODE_ENV === 'production') {
+    console.error(
+      '[sicurezza] ADMIN_JWT_SECRET non impostato in produzione: uso un segreto casuale temporaneo invece del valore di default presente nel codice (prevedibile da chiunque). Imposta una variabile ADMIN_JWT_SECRET robusta e persistente nel file .env del server il prima possibile: finché non lo fai, ogni riavvio del server disconnette gli admin.'
+    )
+    return randomBytes(48).toString('hex')
+  }
+  return 'dev-secret-change-in-production'
+}
+const ADMIN_JWT_SECRET = resolveAdminJwtSecret()
 const ADMIN_TOTP_SECRET = process.env.ADMIN_TOTP_SECRET || ''
 
 const ADMIN_ALLOWED_ORIGINS =

@@ -6,7 +6,7 @@ import { requireUser, AuthRequest } from '../auth-middleware.ts'
 import { auth } from '../auth.ts'
 import { fromNodeHeaders } from 'better-auth/node'
 import { addSubscriber, unsubscribeFromList } from '../services/listmonk.ts'
-import { getLeadsByUserId, getPurchasesByUserId, getPurchaseByIdAndUser, unlinkLeadsByUserId } from '../db.js'
+import { getLeadsByUserId, getPurchasesByUserId, getPurchaseByIdAndUser, deleteLeadsByUserId } from '../db.js'
 
 const router = Router()
 router.use(requireUser)
@@ -90,10 +90,14 @@ router.patch('/email-preferences', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/profile/delete — elimina account
+// Cancella anche i lead/valutazioni collegati all'account (vedi
+// deleteLeadsByUserId in db.js), non solo lo scollegamento: il diritto alla
+// cancellazione (art. 17 GDPR) richiede che i dati personali vengano
+// effettivamente rimossi, non solo "orfani" nel database.
 router.delete('/delete', async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!
-    unlinkLeadsByUserId(user.id)
+    deleteLeadsByUserId(user.id)
     await auth.api.deleteUser({
       body: { password: req.body?.password || '' },
       headers: fromNodeHeaders(req.headers)

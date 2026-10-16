@@ -824,6 +824,8 @@ function PropertyWizardInnerContent({ goBack, children }) {
   )
 }
 
+const GA_MEASUREMENT_ID = 'G-KY2ZDM88NC'
+
 function App() {
   const [selectedAddress, setSelectedAddress] = useState(null)
   const [draftAddress, setDraftAddress] = useState(null)
@@ -1045,6 +1047,30 @@ function App() {
     setIsCookieSettingsForcedOpen(true)
     setIsCookiePanelExpanded(true)
   }
+
+  // Google Analytics: caricato SOLO dopo consenso alla categoria "statistiche"
+  // (mai più staticamente in index.html), per essere coerenti con quanto
+  // dichiarato nell'informativa privacy ("solo con consenso"). Usa anche il
+  // flag di opt-out ufficiale di Google (ga-disable-<ID>): se l'utente revoca
+  // il consenso da un browser in cui lo script era già stato caricato in
+  // precedenza, l'invio di eventi si ferma subito, senza bisogno di un
+  // refresh della pagina.
+  const gaLoadedRef = useRef(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window[`ga-disable-${GA_MEASUREMENT_ID}`] = !cookieConsent.statistiche
+    if (!cookieConsent.statistiche || gaLoadedRef.current) return
+    gaLoadedRef.current = true
+    window.dataLayer = window.dataLayer || []
+    function gtag() { window.dataLayer.push(arguments) }
+    window.gtag = gtag
+    const script = document.createElement('script')
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
+    document.head.appendChild(script)
+    gtag('js', new Date())
+    gtag('config', GA_MEASUREMENT_ID)
+  }, [cookieConsent.statistiche])
   const [currentBlogSlug, setCurrentBlogSlug] = useState(null)
   const [blogCategoryFilter, setBlogCategoryFilter] = useState('Tutte')
   const [testHomeQuery, setTestHomeQuery] = useState('')
@@ -2167,6 +2193,14 @@ function App() {
     if (isProvinceLanding) {
       provinceViewStartRef.current = Date.now()
     } else if (provinceViewStartRef.current) {
+      // Statistiche interne sulle pagine città: usano un identificativo di
+      // visita persistente (localStorage), quindi vanno trattate come
+      // cookie/tecnologie di analisi statistica e inviate solo con consenso
+      // alla categoria "statistiche" (coerentemente con l'informativa privacy).
+      if (!cookieConsent.statistiche) {
+        provinceViewStartRef.current = null
+        return
+      }
       const durationMs = Date.now() - provinceViewStartRef.current
       const sessionId = getOrCreateAnalyticsSessionId()
       const visitorId = getOrCreateAnalyticsVisitorId()
@@ -2192,7 +2226,7 @@ function App() {
         })
       }
     }
-  }, [currentPage, currentProvinceSlug, trackProvinceAnalyticsEvent])
+  }, [currentPage, currentProvinceSlug, trackProvinceAnalyticsEvent, cookieConsent.statistiche])
 
   // Funzione di calcolo valutazione tradizionale (fallback)
   const calculateTraditionalValuation = (property, omiData, address) => {
@@ -5588,10 +5622,11 @@ function App() {
                       <p>
                         I dati di contatto e di valutazione sono conservati per un periodo limitato e proporzionato
                         alle finalità perseguite, di norma per 24 mesi dall&apos;ultima interazione significativa,
-                        salvo diversi obblighi di legge; allo stato attuale la cancellazione avviene su richiesta e
-                        tramite verifica periodica da parte del titolare, non ancora in forma di cancellazione
-                        automatica pianificata. I dati di account restano per tutta la durata del rapporto, fino a
-                        richiesta di cancellazione. I dati tecnici di log e di sicurezza sono conservati per periodi
+                        salvo diversi obblighi di legge. Se l&apos;utente ha creato un account, la cancellazione
+                        dell&apos;account comporta la cancellazione immediata e definitiva anche delle valutazioni e
+                        dei dati ad esso collegati; per le valutazioni effettuate senza creare un account, la
+                        cancellazione avviene su richiesta e tramite verifica periodica da parte del titolare, non
+                        ancora in forma di cancellazione automatica pianificata al raggiungimento dei 24 mesi. I dati tecnici di log e di sicurezza sono conservati per periodi
                         più brevi (ad esempio 6-12 mesi), salvo necessità di ulteriore conservazione in caso di
                         incidenti di sicurezza o contenziosi. I dati statistici aggregati del programma di
                         affiliazione pubblicitaria (CAP, distanza, dispositivo, senza alcun identificativo

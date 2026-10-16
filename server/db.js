@@ -771,6 +771,26 @@ export function unlinkLeadsByUserId(userId) {
   return db.prepare(`UPDATE users_leads SET user_id = NULL WHERE user_id = ?`).run(userId)
 }
 
+// Cancellazione reale dei lead/valutazioni dell'utente che elimina il proprio
+// account (diritto alla cancellazione, art. 17 GDPR): a differenza di
+// unlinkLeadsByUserId sopra (che si limitava a scollegare il lead
+// dall'account lasciando però nome/email/telefono/indirizzo nel database),
+// qui i lead collegati a quell'utente vengono eliminati davvero, insieme a
+// media e analisi AI collegate. Non tocca purchases/report_credits (dati di
+// fatturazione soggetti a obblighi di conservazione fiscale indipendenti).
+export function deleteLeadsByUserId(userId) {
+  const leads = db.prepare(`SELECT id FROM users_leads WHERE user_id = ?`).all(userId)
+  const tx = db.transaction(() => {
+    for (const lead of leads) {
+      db.prepare(`DELETE FROM lead_media WHERE lead_id = ?`).run(lead.id)
+      db.prepare(`DELETE FROM lead_ai_analysis WHERE lead_id = ?`).run(lead.id)
+    }
+    db.prepare(`DELETE FROM users_leads WHERE user_id = ?`).run(userId)
+  })
+  tx()
+  return leads.length
+}
+
 // Collega un lead creato in anonimo (prima del login) all'utente che poi si
 // autentica per proseguire con l'acquisto. Solo se il lead non è già di qualcun
 // altro (WHERE user_id IS NULL), così non si può "rubare" un lead già associato.

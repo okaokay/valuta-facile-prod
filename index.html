@@ -2,15 +2,10 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KY2ZDM88NC"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-KY2ZDM88NC');
-    </script>
+    <!-- Google tag (gtag.js): NON caricato qui staticamente. Viene iniettato
+         da src/App.jsx solo dopo che l'utente ha accettato la categoria
+         "statistiche" nel banner cookie (vedi useEffect su cookieConsent.statistiche),
+         per rispettare quanto dichiarato nell'informativa privacy. -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
