@@ -1,3 +1,5 @@
+import AffiliateAdSlot from './ads/AffiliateAdSlot'
+
 function WizardStepperSidebar({ wizardStep, address }) {
   const steps = [
     { id: 1, key: 'address', label: 'Indirizzo' },
@@ -104,6 +106,18 @@ function WizardStepperSidebar({ wizardStep, address }) {
             Completa tutti i passaggi per ottenere una valutazione precisa del tuo immobile.
           </div>
         </div>
+      </div>
+
+      {/* Banner affiliato geolocalizzato: visibile per tutta la durata del
+          wizard (step 1-4), non solo alla fine nei risultati. Se l'indirizzo
+          non è ancora stato confermato (step "Indirizzo"), il backend prova
+          comunque il fallback via IP (vedi Fase 4). */}
+      <div className="mt-6">
+        <AffiliateAdSlot
+          lat={typeof address?.lat === 'number' ? address.lat : null}
+          lng={typeof address?.lon === 'number' ? address.lon : (typeof address?.lng === 'number' ? address.lng : null)}
+          cap={address?.postcode || address?.cap || null}
+        />
       </div>
     </div>
   )
