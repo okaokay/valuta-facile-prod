@@ -5512,13 +5512,17 @@ function App() {
                       </p>
                       <p>
                         Tramite il servizio vengono raccolti: dati anagrafici e di contatto (nome, cognome, email,
-                        telefono); dati relativi all&apos;immobile (indirizzo, CAP, comune, provincia, regione,
-                        superficie, numero di locali e bagni, piano, stato dell&apos;immobile, anno di costruzione,
-                        presenza di ascensore, spazi esterni e pertinenze); dati forniti nel percorso guidato di
-                        qualificazione (profilo utente, rapporto con l&apos;immobile, tempistiche di vendita,
-                        preferenza per valutazioni da agenzie di zona, eventuale consenso marketing); dati contenuti in
-                        planimetrie e fotografie caricate; dati tecnici di utilizzo del servizio e della dashboard
-                        staff (log di accesso, timestamp, filtri di ricerca).
+                        telefono, indirizzo IP); dati relativi all&apos;immobile (indirizzo, CAP, comune, provincia,
+                        regione, coordinate geografiche, superficie, numero di locali e bagni, piano, stato
+                        dell&apos;immobile, anno di costruzione, classe energetica, presenza di ascensore, spazi
+                        esterni e pertinenze); dati forniti nel percorso guidato di qualificazione (profilo utente,
+                        rapporto con l&apos;immobile, tempistiche di vendita, preferenza per valutazioni da agenzie di
+                        zona, eventuale consenso marketing); dati contenuti in planimetrie e fotografie caricate; dati
+                        dell&apos;account utente registrato, se creato (nome, email, password conservata solo in
+                        forma di hash, dati di sessione) per acquistare o gestire i report a pagamento; dati di
+                        pagamento limitati a identificativo transazione, stato ed esito, gestiti interamente da
+                        Stripe (nessun dato di carta transita o è conservato dal titolare); dati tecnici di utilizzo
+                        del servizio e della dashboard staff (log di accesso, timestamp, filtri di ricerca).
                       </p>
                       <p className="font-semibold">
                         4. Finalità del trattamento e basi giuridiche
@@ -5530,14 +5534,26 @@ function App() {
                         GDPR); b) gestire le richieste di contatto e di consulenza personalizzata, organizzare i lead
                         in un database interno e ricontattare l&apos;utente, sempre sulla base dell&apos;art. 6, par. 1,
                         lett. b e del legittimo interesse del titolare a gestire efficacemente tali richieste (art. 6,
-                        par. 1, lett. f); c) effettuare analisi interne e migliorare il servizio tramite dashboard e
-                        strumenti di raggruppamento per area geografica, con legittimo interesse del titolare allo
-                        sviluppo del servizio (art. 6, par. 1, lett. f); d) svolgere attività di marketing diretto o
-                        mettere in contatto l&apos;utente con agenzie immobiliari di zona solo in presenza di consenso
-                        esplicito, libero e specifico (art. 6, par. 1, lett. a e art. 130 Codice Privacy); e) adempiere
-                        ad obblighi di legge, contabili e fiscali (art. 6, par. 1, lett. c); f) garantire la sicurezza
-                        dei sistemi, prevenire abusi e difendere i diritti del titolare in giudizio (art. 6, par. 1,
-                        lett. f).
+                        par. 1, lett. f); c) gestire l&apos;account utente registrato, l&apos;autenticazione e
+                        l&apos;acquisto a pagamento dei report tramite Stripe, in esecuzione del contratto con
+                        l&apos;utente (art. 6, par. 1, lett. b) e per adempiere ad obblighi fiscali e contabili (art.
+                        6, par. 1, lett. c); d) inviare e-mail transazionali necessarie al servizio e, in quanto
+                        iscrizione automatica strumentale all&apos;esecuzione del contratto con l&apos;utente
+                        registrato, comunicazioni relative al funzionamento del servizio tramite la lista generale
+                        utenti, sempre con possibilità di disiscrizione (art. 6, par. 1, lett. b); e) inviare, solo
+                        previo consenso facoltativo e distinto, una newsletter informativa/promozionale separata
+                        (art. 6, par. 1, lett. a); f) effettuare analisi interne e migliorare il servizio tramite
+                        dashboard e strumenti di raggruppamento per area geografica, con legittimo interesse del
+                        titolare allo sviluppo del servizio (art. 6, par. 1, lett. f); g) mostrare banner o video
+                        pubblicitari di affiliati selezionati in base alla vicinanza geografica con l&apos;immobile
+                        valutato (o, in assenza di un indirizzo inserito, stimata in via approssimativa
+                        dall&apos;indirizzo IP), senza condividere con l&apos;affiliato alcun dato identificativo
+                        dell&apos;utente, per legittimo interesse del titolare a finanziare il servizio (art. 6, par.
+                        1, lett. f); h) svolgere attività di marketing diretto ulteriore o mettere in contatto
+                        l&apos;utente con agenzie immobiliari di zona solo in presenza di consenso esplicito, libero e
+                        specifico (art. 6, par. 1, lett. a e art. 130 Codice Privacy); i) adempiere ad obblighi di
+                        legge, contabili e fiscali (art. 6, par. 1, lett. c); j) garantire la sicurezza dei sistemi,
+                        prevenire abusi e difendere i diritti del titolare in giudizio (art. 6, par. 1, lett. f).
                       </p>
                       <p className="font-semibold">
                         5. Modalità del trattamento
@@ -5549,7 +5565,10 @@ function App() {
                         riservatezza. I sistemi sono ospitati su infrastruttura VPS fornita da Hostinger
                         (hostinger.com) o da altri fornitori equivalenti scelti dal Titolare. Accedono ai dati solo
                         soggetti autorizzati e istruiti dal Titolare o fornitori terzi nominati responsabili del
-                        trattamento ai sensi dell&apos;art. 28 GDPR.
+                        trattamento ai sensi dell&apos;art. 28 GDPR. Il servizio è distribuito esclusivamente come sito
+                        web, accessibile da browser su qualsiasi dispositivo: non esiste, alla data di aggiornamento
+                        della presente informativa, un&apos;applicazione nativa distribuita tramite Apple App Store o
+                        Google Play Store.
                       </p>
                       <p className="font-semibold">
                         6. Natura del conferimento dei dati
@@ -5568,11 +5587,16 @@ function App() {
                       </p>
                       <p>
                         I dati di contatto e di valutazione sono conservati per un periodo limitato e proporzionato
-                        alle finalità perseguite, di norma per un massimo di 12-24 mesi dall&apos;ultima interazione
-                        significativa, salvo diversi obblighi di legge. I dati tecnici di log e di sicurezza sono
-                        conservati per periodi più brevi (ad esempio 6-12 mesi), salvo necessità di ulteriore
-                        conservazione in caso di incidenti di sicurezza o contenziosi. Decorso il periodo di
-                        conservazione, i dati sono cancellati, anonimizzati o resi non riconducibili all&apos;interessato.
+                        alle finalità perseguite, di norma per 24 mesi dall&apos;ultima interazione significativa,
+                        salvo diversi obblighi di legge; allo stato attuale la cancellazione avviene su richiesta e
+                        tramite verifica periodica da parte del titolare, non ancora in forma di cancellazione
+                        automatica pianificata. I dati di account restano per tutta la durata del rapporto, fino a
+                        richiesta di cancellazione. I dati tecnici di log e di sicurezza sono conservati per periodi
+                        più brevi (ad esempio 6-12 mesi), salvo necessità di ulteriore conservazione in caso di
+                        incidenti di sicurezza o contenziosi. I dati statistici aggregati del programma di
+                        affiliazione pubblicitaria (CAP, distanza, dispositivo, senza alcun identificativo
+                        individuale) sono conservati 24 mesi. Decorso il periodo di conservazione, i dati sono
+                        cancellati, anonimizzati o resi non riconducibili all&apos;interessato.
                       </p>
                       <p className="font-semibold">
                         8. Ambito di comunicazione dei dati
@@ -5586,23 +5610,28 @@ function App() {
                         ordini delle autorità. In particolare, a seconda delle funzionalità utilizzate dall&apos;utente,
                         possono essere coinvolti i seguenti fornitori terzi, che trattano i dati in qualità di
                         responsabili del trattamento o titolari autonomi secondo i rispettivi ruoli: Stripe (per la
-                        gestione dei pagamenti online, quando l&apos;utente acquista un report); Geoapify e, in via
-                        residuale, Nominatim/OpenStreetMap (per la ricerca e geolocalizzazione degli indirizzi
-                        inseriti); Listmonk (per l&apos;invio di email transazionali, ad esempio la consegna del
+                        gestione dei pagamenti online, quando l&apos;utente acquista un report; riceve indirizzo email
+                        e importo dovuto, mai dati dell&apos;immobile); Geoapify e, in via residuale,
+                        Nominatim/OpenStreetMap (per la ricerca e geolocalizzazione degli indirizzi inseriti);
+                        ip-api.com (per stimare in via approssimativa la zona dell&apos;utente dall&apos;indirizzo IP,
+                        solo nelle pagine in cui non è stato ancora inserito un indirizzo, ai fini del targeting
+                        pubblicitario); Listmonk (per l&apos;invio di email transazionali, ad esempio la consegna del
                         report); Groq AI (per l&apos;elaborazione tramite intelligenza artificiale di alcuni contenuti
-                        della valutazione).
+                        della valutazione). Gli affiliati pubblicitari ricevono esclusivamente dati statistici
+                        aggregati e non identificativi (CAP, distanza, dispositivo): mai nome, email, indirizzo
+                        completo o altro dato che permetta di risalire all&apos;utente.
                       </p>
                       <p className="font-semibold">
                         9. Trasferimenti di dati verso Paesi terzi
                       </p>
                       <p>
-                        L&apos;utilizzo di alcuni fornitori indicati al punto precedente (in particolare Groq AI e,
-                        limitatamente ad alcune richieste, i servizi di geocoding Geoapify e Nominatim/OpenStreetMap)
-                        può comportare il trasferimento di alcuni dati tecnici o di contenuto verso Paesi non
-                        appartenenti allo Spazio Economico Europeo. In tali casi il titolare verifica l&apos;esistenza di
-                        una decisione di adeguatezza della Commissione Europea oppure adotta garanzie adeguate come le
-                        clausole contrattuali tipo (Standard Contractual Clauses) o altri strumenti previsti dagli
-                        artt. 44 e ss. GDPR.
+                        L&apos;utilizzo di alcuni fornitori indicati al punto precedente (in particolare Groq AI,
+                        ip-api.com e, limitatamente ad alcune richieste, i servizi di geocoding Geoapify e
+                        Nominatim/OpenStreetMap) può comportare il trasferimento di alcuni dati tecnici o di contenuto
+                        verso Paesi non appartenenti allo Spazio Economico Europeo. In tali casi il titolare verifica
+                        l&apos;esistenza di una decisione di adeguatezza della Commissione Europea oppure adotta
+                        garanzie adeguate come le clausole contrattuali tipo (Standard Contractual Clauses) o altri
+                        strumenti previsti dagli artt. 44 e ss. GDPR.
                       </p>
                       <p className="font-semibold">
                         10. Diritti dell&apos;interessato
@@ -5728,6 +5757,41 @@ function App() {
                                 </td>
                                 <td className="px-3 py-2">
                                   Circa 12–24 mesi dall&apos;ultima interazione significativa
+                                </td>
+                              </tr>
+                              <tr className="border-t border-gray-100 align-top">
+                                <td className="px-3 py-2">
+                                  Account utente e acquisto report (pagamenti)
+                                </td>
+                                <td className="px-3 py-2">
+                                  Email, nome, password (hash), dati di sessione, identificativi di transazione Stripe
+                                </td>
+                                <td className="px-3 py-2">
+                                  Utenti che creano un account o acquistano un report
+                                </td>
+                                <td className="px-3 py-2">
+                                  Art. 6.1.b GDPR (esecuzione del contratto); art. 6.1.c GDPR (obblighi fiscali)
+                                </td>
+                                <td className="px-3 py-2">
+                                  Per tutta la durata del rapporto, fino a richiesta di cancellazione dell&apos;account
+                                </td>
+                              </tr>
+                              <tr className="border-t border-gray-100 align-top">
+                                <td className="px-3 py-2">
+                                  Affiliazione pubblicitaria geolocalizzata
+                                </td>
+                                <td className="px-3 py-2">
+                                  CAP/distanza approssimativa e tipo dispositivo (aggregati, non identificativi); dati
+                                  di contatto dell&apos;affiliato (non dell&apos;utente)
+                                </td>
+                                <td className="px-3 py-2">
+                                  Utenti che visualizzano un banner/video; affiliati pubblicitari
+                                </td>
+                                <td className="px-3 py-2">
+                                  Art. 6.1.f GDPR (legittimo interesse a finanziare il servizio)
+                                </td>
+                                <td className="px-3 py-2">
+                                  24 mesi per i dati statistici aggregati
                                 </td>
                               </tr>
                               <tr className="border-t border-gray-100 align-top">
@@ -5873,6 +5937,62 @@ function App() {
                                 </td>
                                 <td className="px-3 py-2">
                                   Autenticazione area admin, policy interne su accessi e cancellazioni, backup controllati.
+                                </td>
+                              </tr>
+                              <tr className="border-t border-gray-100 align-top">
+                                <td className="px-3 py-2">
+                                  Account utente e acquisto report (pagamenti)
+                                </td>
+                                <td className="px-3 py-2">
+                                  Gestire la registrazione, l&apos;autenticazione e l&apos;acquisto a pagamento dei report.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Utenti che creano un account o acquistano un report.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Email, nome, password (hash), dati di sessione, identificativi di transazione.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Stripe (pagamenti, non riceve mai dati dell&apos;immobile), Listmonk (email di accesso).
+                                </td>
+                                <td className="px-3 py-2">
+                                  Verso Stripe, soggetto alle garanzie contrattuali previste dal fornitore.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Per tutta la durata del rapporto, fino a richiesta di cancellazione dell&apos;account.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Password in hash, autenticazione dedicata, gestione pagamenti delegata a fornitore
+                                  certificato PCI-DSS.
+                                </td>
+                              </tr>
+                              <tr className="border-t border-gray-100 align-top">
+                                <td className="px-3 py-2">
+                                  Affiliazione pubblicitaria geolocalizzata
+                                </td>
+                                <td className="px-3 py-2">
+                                  Mostrare banner/video di affiliati pertinenti alla zona dell&apos;immobile valutato
+                                  (o, in assenza di indirizzo, alla zona stimata dall&apos;IP) per finanziare il servizio.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Utenti che visualizzano un banner/video; affiliati pubblicitari (titolari autonomi
+                                  per i propri dati di contatto).
+                                </td>
+                                <td className="px-3 py-2">
+                                  CAP, distanza approssimativa, tipo dispositivo (aggregati, mai identificativi
+                                  dell&apos;utente); per gli affiliati: ragione sociale, referente, email, telefono.
+                                </td>
+                                <td className="px-3 py-2">
+                                  ip-api.com (stima zona da IP, solo senza indirizzo inserito).
+                                </td>
+                                <td className="px-3 py-2">
+                                  Verso ip-api.com, per la sola stima geografica approssimativa.
+                                </td>
+                                <td className="px-3 py-2">
+                                  24 mesi per i dati statistici aggregati.
+                                </td>
+                                <td className="px-3 py-2">
+                                  Minimizzazione: nessun dato identificativo dell&apos;utente condiviso con l&apos;affiliato.
                                 </td>
                               </tr>
                               <tr className="border-t border-gray-100 align-top">
