@@ -2274,6 +2274,13 @@ app.get('/api/ads/match', analyticsLimiter, async (req, res) => {
   let lat = Number(req.query.lat)
   let lng = Number(req.query.lng)
   let capUtente = req.query.cap ? String(req.query.cap).trim() : null
+  // Filtro opzionale per tipo di annuncio: il gate video pre-valutazione
+  // (ValuationAdGateModal) chiede esplicitamente tipo=video, perché ha senso
+  // mostrare lì SOLO un affiliato con un vero video, mai un banner statico.
+  // Senza questo filtro, su una zona con sia campagne banner che video, la
+  // rotazione a least-served-first poteva restituire un banner anche al
+  // gate video, che lo scartava silenziosamente mostrando il countdown demo.
+  const tipoRichiesto = ['video', 'banner'].includes(req.query.tipo) ? req.query.tipo : null
   // Fase 4: se la pagina non ha ancora un indirizzo preciso (homepage,
   // pagine città/provincia), proviamo a stimare la posizione dall'IP del
   // visitatore. È un fallback meno preciso (a livello di città, non di
@@ -2289,6 +2296,7 @@ app.get('/api/ads/match', analyticsLimiter, async (req, res) => {
   try {
     const candidates = listActiveCampaignsForTargeting()
     const eligible = candidates
+      .filter((c) => !tipoRichiesto || c.tipo === tipoRichiesto)
       .map((c) => ({
         ...c,
         distanzaKm: haversineKm(lat, lng, c.target_lat, c.target_lon)

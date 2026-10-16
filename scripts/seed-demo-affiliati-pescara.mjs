@@ -26,6 +26,7 @@ import {
   createAffiliate,
   listAffiliates,
   createCampaign,
+  listCampaignsByAffiliate,
   setCampaignMedia
 } from '../server/db.js'
 import fs from 'fs'
@@ -140,22 +141,33 @@ for (const d of DEMO) {
 
   const c = d.campagna
   const isVideo = c.tipo === 'video' && c.videoAsset
-  const campaign = createCampaign({
-    affiliateId: affiliate.id,
-    nome: c.nome,
-    tipo: isVideo ? 'video' : 'banner',
-    linkDestinazione: null,
-    capTarget: c.capTarget,
-    indirizzoTarget: c.indirizzoTarget,
-    targetLat: c.targetLat,
-    targetLon: c.targetLon,
-    raggioKm: c.raggioKm,
-    dataInizio: null,
-    dataFine: null,
-    tettoImpressioni: null,
-    tariffaTipo: 'flat',
-    tariffaValore: 0
-  })
+
+  // Idempotente anche sulle campagne (non solo sugli affiliati): se esiste
+  // già una campagna con lo stesso nome per questo affiliato (es. rilanci lo
+  // script dopo un aggiornamento), la riusiamo invece di crearne una
+  // duplicata — evita di accumulare più campagne demo per lo stesso scopo.
+  const existingCampaigns = listCampaignsByAffiliate(affiliate.id)
+  let campaign = existingCampaigns.find((camp) => camp.nome === c.nome)
+  if (campaign) {
+    console.log(`Campagna gia esistente, riuso: ${campaign.nome} (id ${campaign.id})`)
+  } else {
+    campaign = createCampaign({
+      affiliateId: affiliate.id,
+      nome: c.nome,
+      tipo: isVideo ? 'video' : 'banner',
+      linkDestinazione: null,
+      capTarget: c.capTarget,
+      indirizzoTarget: c.indirizzoTarget,
+      targetLat: c.targetLat,
+      targetLon: c.targetLon,
+      raggioKm: c.raggioKm,
+      dataInizio: null,
+      dataFine: null,
+      tettoImpressioni: null,
+      tariffaTipo: 'flat',
+      tariffaValore: 0
+    })
+  }
 
   let filename
   if (isVideo) {

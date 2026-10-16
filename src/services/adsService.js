@@ -9,7 +9,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '
 // homepage o pagine città/provincia), il backend prova comunque a stimare
 // la posizione dall'IP del visitatore (Fase 4) — in quel caso si chiama
 // senza questi parametri, non si rinuncia alla richiesta.
-export async function fetchMatchingAd({ lat, lng, cap } = {}) {
+export async function fetchMatchingAd({ lat, lng, cap, tipo } = {}) {
   if (!API_BASE_URL) {
     return { ad: null }
   }
@@ -20,6 +20,10 @@ export async function fetchMatchingAd({ lat, lng, cap } = {}) {
       params.set('lng', String(lng))
     }
     if (cap) params.set('cap', cap)
+    // 'video' forza il backend a restituire solo campagne video (usato dal
+    // gate pre-valutazione, che non ha senso mostri un banner statico), vedi
+    // filtro lato server in GET /api/ads/match. Omesso: va bene qualsiasi tipo.
+    if (tipo) params.set('tipo', tipo)
     const response = await fetch(`${API_BASE_URL}/ads/match?${params.toString()}`)
     if (!response.ok) return { ad: null }
     return response.json()

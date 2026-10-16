@@ -21,7 +21,10 @@ function ValuationAdGateModal({ mode, lat = null, lng = null, cap = null, onUnlo
 
   useEffect(() => {
     let cancelled = false
-    fetchMatchingAd({ lat, lng, cap }).then((data) => {
+    // tipo: 'video' -> il backend restituisce SOLO campagne video (se
+    // presenti banner e video idonei nella stessa zona, qui vogliamo sempre
+    // il video: un banner statico non ha senso in questo gate).
+    fetchMatchingAd({ lat, lng, cap, tipo: 'video' }).then((data) => {
       if (!cancelled && data?.ad?.tipo === 'video' && data.ad.mediaUrl) {
         setAffiliateAd(data.ad)
       }
