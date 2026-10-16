@@ -7,19 +7,25 @@ import { fetchMatchingAd, trackAdClick } from '../../services/adsService'
 // nulla: a differenza del placeholder AdSense (spazio sempre riservato),
 // qui non ha senso mostrare un riquadro vuoto finché non ci sono affiliati
 // configurati per quel CAP.
+// Se lat/lng sono passati (es. dopo che l'utente ha inserito l'indirizzo da
+// valutare), il matching è preciso (Fase 2). Se non lo sono (es. homepage,
+// pagine città/provincia, dove non esiste ancora un indirizzo), il
+// componente chiama comunque il backend: prova a stimare la posizione
+// dall'IP del visitatore (Fase 4) — meno preciso, ma meglio di niente.
 function AffiliateAdSlot({ lat, lng, cap, className = '' }) {
   const [ad, setAd] = useState(null)
   const fetchedKeyRef = useRef(null)
 
   useEffect(() => {
-    if (typeof lat !== 'number' || typeof lng !== 'number') return
-    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`
+    const hasCoords = typeof lat === 'number' && typeof lng === 'number'
+    const key = hasCoords ? `${lat.toFixed(5)},${lng.toFixed(5)}` : `ip:${cap || ''}`
     // Evita di richiedere/registrare una nuova impression ad ogni re-render
-    // dello stesso indirizzo (es. cambio di altri campi del wizard).
+    // dello stesso indirizzo (es. cambio di altri campi del wizard) o, in
+    // modalità IP, più di una volta per il montaggio della pagina.
     if (fetchedKeyRef.current === key) return
     fetchedKeyRef.current = key
     let cancelled = false
-    fetchMatchingAd({ lat, lng, cap }).then((data) => {
+    fetchMatchingAd(hasCoords ? { lat, lng, cap } : { cap }).then((data) => {
       if (!cancelled) setAd(data?.ad || null)
     })
     return () => {

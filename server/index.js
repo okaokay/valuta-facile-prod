@@ -16,6 +16,7 @@ import { registerValuationEngine } from './services/valuationEngineRegistry.js'
 import { mapUiCategoryToOmi } from './services/omiCategoryMapping.js'
 import { searchAddressesServerSide, reverseGeocodeServerSide } from './services/geocodeSearch.js'
 import { getMarketData } from './services/realAdvisorMarketData.js'
+import { geolocateIp } from './services/ipGeolocation.js'
 import { authenticator } from 'otplib'
 import {
   insertLead,
@@ -2269,12 +2270,21 @@ function classifyDevice(userAgent) {
 // con meno impression finora — vedi nota su getImpressionCountsForCampaigns
 // in db.js per il perché di questa scelta invece di un vero round-robin con
 // stato in memoria.
-app.get('/api/ads/match', analyticsLimiter, (req, res) => {
-  const lat = Number(req.query.lat)
-  const lng = Number(req.query.lng)
-  const capUtente = req.query.cap ? String(req.query.cap).trim() : null
+app.get('/api/ads/match', analyticsLimiter, async (req, res) => {
+  let lat = Number(req.query.lat)
+  let lng = Number(req.query.lng)
+  let capUtente = req.query.cap ? String(req.query.cap).trim() : null
+  // Fase 4: se la pagina non ha ancora un indirizzo preciso (homepage,
+  // pagine città/provincia), proviamo a stimare la posizione dall'IP del
+  // visitatore. È un fallback meno preciso (a livello di città, non di
+  // indirizzo esatto): il raggio impostato dall'affiliato va quindi letto
+  // con questo margine d'errore in mente su queste pagine.
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return res.json({ ad: null })
+    const geo = await geolocateIp(req.ip)
+    if (!geo) return res.json({ ad: null })
+    lat = geo.lat
+    lng = geo.lon
+    capUtente = capUtente || geo.cap
   }
   try {
     const candidates = listActiveCampaignsForTargeting()

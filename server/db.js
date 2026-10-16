@@ -883,6 +883,53 @@ export function setCachedPoi(cacheKey, { success, payload }) {
   })
 }
 
+// --- Cache geolocalizzazione IP (Fase 4 targeting affiliati) -------------
+// La posizione di un IP cambia raramente: una cache di qualche giorno evita
+// di martellare il servizio gratuito di geolocalizzazione ad ogni richiesta
+// dallo stesso visitatore (homepage, pagine città senza indirizzo noto).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ip_geo_cache (
+    cache_key TEXT PRIMARY KEY,
+    payload TEXT,
+    success INTEGER NOT NULL DEFAULT 1,
+    fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`)
+
+export function getCachedIpGeo(cacheKey, maxAgeHours) {
+  const row = db
+    .prepare(`SELECT payload, success, fetched_at FROM ip_geo_cache WHERE cache_key = ?`)
+    .get(cacheKey)
+  if (!row) return null
+
+  const fetchedAtMs = new Date(row.fetched_at + 'Z').getTime()
+  const ageHours = (Date.now() - fetchedAtMs) / (1000 * 60 * 60)
+  if (!Number.isFinite(ageHours) || ageHours > maxAgeHours) {
+    return null
+  }
+
+  return {
+    success: !!row.success,
+    payload: row.payload ? JSON.parse(row.payload) : null,
+    fetchedAt: row.fetched_at
+  }
+}
+
+export function setCachedIpGeo(cacheKey, { success, payload }) {
+  db.prepare(
+    `INSERT INTO ip_geo_cache (cache_key, payload, success, fetched_at)
+     VALUES (@cache_key, @payload, @success, datetime('now'))
+     ON CONFLICT(cache_key) DO UPDATE SET
+       payload = excluded.payload,
+       success = excluded.success,
+       fetched_at = excluded.fetched_at`
+  ).run({
+    cache_key: cacheKey,
+    payload: payload ? JSON.stringify(payload) : null,
+    success: success ? 1 : 0
+  })
+}
+
 // --- Scuole per comune (dato statico, importato una tantum) --------------
 
 // Normalizza il nome comune per il lookup (maiuscole/minuscole, accenti e

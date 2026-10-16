@@ -5,12 +5,20 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '
 // server. Fallisce silenziosamente (nessuna pubblicità mostrata) se il
 // backend non è raggiungibile: non deve mai bloccare la visualizzazione
 // della valutazione.
-export async function fetchMatchingAd({ lat, lng, cap }) {
-  if (!API_BASE_URL || typeof lat !== 'number' || typeof lng !== 'number') {
+// Se lat/lng non sono disponibili (pagine senza un indirizzo preciso, es.
+// homepage o pagine città/provincia), il backend prova comunque a stimare
+// la posizione dall'IP del visitatore (Fase 4) — in quel caso si chiama
+// senza questi parametri, non si rinuncia alla richiesta.
+export async function fetchMatchingAd({ lat, lng, cap } = {}) {
+  if (!API_BASE_URL) {
     return { ad: null }
   }
   try {
-    const params = new URLSearchParams({ lat: String(lat), lng: String(lng) })
+    const params = new URLSearchParams()
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      params.set('lat', String(lat))
+      params.set('lng', String(lng))
+    }
     if (cap) params.set('cap', cap)
     const response = await fetch(`${API_BASE_URL}/ads/match?${params.toString()}`)
     if (!response.ok) return { ad: null }

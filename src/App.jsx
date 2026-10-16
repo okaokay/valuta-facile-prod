@@ -27,6 +27,7 @@ import UserMenu from './components/auth/UserMenu'
 import ReportUnlockModal from './components/report/ReportUnlockModal'
 import ValuationAdGateModal from './components/ValuationAdGateModal'
 import AdBanner from './components/ads/AdBanner'
+import AffiliateAdSlot from './components/ads/AffiliateAdSlot'
 import ProfilePage from './pages/ProfilePage'
 import AffiliatePortalPage from './pages/AffiliatePortalPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -4485,6 +4486,12 @@ function App() {
             </div>
           )}
 
+          <div className="border-t-2 border-slate-900 bg-white">
+            <div className="max-w-5xl mx-auto px-6 sm:px-10 lg:px-16 py-6">
+              <AffiliateAdSlot />
+            </div>
+          </div>
+
           <div className="border-t-2 border-slate-900 bg-white hero-sky">
             <section className="relative z-10 max-w-5xl mx-auto px-6 sm:px-10 lg:px-16 py-14 lg:py-20">
               <div className="w-full max-w-4xl mx-auto">
@@ -6606,6 +6613,10 @@ function App() {
                     />
                   </div>
                 )}
+
+                <div className="mt-10">
+                  <AffiliateAdSlot />
+                </div>
               </div>
             </section>
           )}
